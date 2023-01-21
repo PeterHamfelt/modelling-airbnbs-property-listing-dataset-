@@ -25,6 +25,20 @@ def combine_description_strings(dataframe):
     pass
 
 def set_default_feature_values(dataframe):
+    """Set a default value for features
+
+    Replace missing and string values in the specified feature columns of the dataframe 
+    with the default value of 1 and at the same time change the data type of the columns
+    to float. 
+
+    Args:
+        dataframe (pandas.DataFrame): The dataframe which contains the columns which requires
+        modification.
+
+    Returns:
+        pandas.DataFrame: The dataframe which has been modified. 
+    """
+    
     col_names = ["guests","beds","bathrooms","bedrooms"]
     
     for column in col_names:
@@ -32,14 +46,12 @@ def set_default_feature_values(dataframe):
         if dataframe[column].dtype == object:
             dataframe[column] = dataframe[column].replace(r"[a-zA-Z]+",1,regex = True)
         
-        
         dataframe[column] = dataframe[column].replace(np.nan,1)
         
         dataframe[column] = dataframe[column].astype(float)
         
         print(sorted(list(dataframe[column].unique())))
             
-        
     return dataframe
 
 
