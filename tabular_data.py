@@ -28,7 +28,6 @@ def combine_description_strings(df):
     df["Description"] = df["Description"].apply(lambda x: x.replace("About this space",""))
     df["Description"] = df["Description"].apply(lambda x: "".join(x))
 
-    
     return df
             
 
