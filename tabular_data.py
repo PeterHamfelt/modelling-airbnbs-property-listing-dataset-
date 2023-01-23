@@ -26,8 +26,9 @@ def combine_description_strings(df):
     
     df.dropna(subset = ["Description"], inplace = True)
     df["Description"] = df["Description"].apply(lambda x: x.replace("About this space",""))
-    df["Description"] = df["Description"].apply(lambda x: "".join(x))
-
+    df["Description"] = df["Description"].apply(lambda x: " ".join(ast.literal_eval(x)) if x.startswith("[") and x.endswith("]") else x)
+    df["Description"] = df["Description"].apply(lambda x: " ".join(x.split()))
+    
     return df
             
 
@@ -74,5 +75,5 @@ if __name__ == "__main__":
     listing_df = remove_rows_with_missing_ratings(listing_df,rating_columns)
     listing_df = set_default_feature_values(listing_df)
     listing_df = combine_description_strings(listing_df)
-
+        
     print(listing_df["Description"])
