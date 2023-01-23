@@ -1,15 +1,16 @@
 import pandas as pd
 import numpy as np
 import os
+import ast
 
-def remove_rows_with_missing_ratings(dataframe,column_name):
+def remove_rows_with_missing_ratings(df,column_name):
     """Remove rows with missing ratings
 
     Remove rows from the given dataframe that contains missing values in the specified
     columns.
 
     Args:
-        dataframe (pandas.DataFrame): The dataframe to remove the rows from
+        df (pandas.DataFrame): The dataframe to remove the rows from
         column_name (list): List of column names to check for missing values. 
 
     Returns:
@@ -17,14 +18,19 @@ def remove_rows_with_missing_ratings(dataframe,column_name):
         specified columns removed. 
     """
     
-    dataframe.dropna(subset = column_name,inplace = True)
+    df.dropna(subset = column_name,inplace = True)
     
-    return dataframe
+    return df
 
-def combine_description_strings(dataframe):
-    pass
+def combine_description_strings(df):
+    
+    df.dropna(subset = ["Description"], inplace = True)
+    df["Description"] = df["Description"].apply(lambda x: x.replace("About this space"," "))
+    
+    return df
+            
 
-def set_default_feature_values(dataframe):
+def set_default_feature_values(df):
     """Set a default value for features
 
     Replace missing and string values in the specified feature columns of the dataframe 
@@ -32,7 +38,7 @@ def set_default_feature_values(dataframe):
     to float. 
 
     Args:
-        dataframe (pandas.DataFrame): The dataframe which contains the columns which requires
+        df (pandas.DataFrame): The dataframe which contains the columns which requires
         modification.
 
     Returns:
@@ -43,16 +49,16 @@ def set_default_feature_values(dataframe):
     
     for column in col_names:
         
-        if dataframe[column].dtype == object:
-            dataframe[column] = dataframe[column].replace(r"[a-zA-Z]+",1,regex = True)
+        if df[column].dtype == object:
+            df[column] = df[column].replace(r"[a-zA-Z]+",1,regex = True)
         
-        dataframe[column] = dataframe[column].replace(np.nan,1)
+        df[column] = df[column].replace(np.nan,1)
         
-        dataframe[column] = dataframe[column].astype(float)
+        df[column] = df[column].astype(float)
         
-        print(sorted(list(dataframe[column].unique())))
+        print(sorted(list(df[column].unique())))
             
-    return dataframe
+    return df
 
 
 if __name__ == "__main__":
@@ -66,6 +72,6 @@ if __name__ == "__main__":
     rating_columns = column_names[10:16]
     listing_df = remove_rows_with_missing_ratings(listing_df,rating_columns)
     listing_df = set_default_feature_values(listing_df)
+    listing_df = combine_description_strings(listing_df)
 
-
-
+    print(listing_df["Description"])
