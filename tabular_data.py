@@ -25,7 +25,9 @@ def remove_rows_with_missing_ratings(df,column_name):
 def combine_description_strings(df):
     
     df.dropna(subset = ["Description"], inplace = True)
-    df["Description"] = df["Description"].apply(lambda x: x.replace("About this space"," "))
+    df["Description"] = df["Description"].apply(lambda x: x.replace("About this space",""))
+    df["Description"] = df["Description"].apply(lambda x: "".join(x))
+
     
     return df
             
