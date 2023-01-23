@@ -23,6 +23,17 @@ def remove_rows_with_missing_ratings(df,column_name):
     return df
 
 def combine_description_strings(df):
+    """Combine description list into string
+
+    Firstly remove "About this space" from the list of items before combining the remaining 
+    items in the list into a singular string.    
+
+    Args:
+        df (pandas.DataFrame): The dataframe which requires modification.
+
+    Returns:
+        pandas.DataFrame: The modified dataframe
+    """
     
     df.dropna(subset = ["Description"], inplace = True)
     df["Description"] = df["Description"].apply(lambda x: x.replace("About this space",""))
@@ -40,8 +51,7 @@ def set_default_feature_values(df):
     to float. 
 
     Args:
-        df (pandas.DataFrame): The dataframe which contains the columns which requires
-        modification.
+        df (pandas.DataFrame): The dataframe which requires modification.
 
     Returns:
         pandas.DataFrame: The dataframe which has been modified. 
