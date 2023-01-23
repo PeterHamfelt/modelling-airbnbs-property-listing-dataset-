@@ -3,7 +3,7 @@ import numpy as np
 import os
 import ast
 
-def remove_rows_with_missing_ratings(df,column_name):
+def remove_rows_with_missing_ratings(df):
     """Remove rows with missing ratings
 
     Remove rows from the given dataframe that contains missing values in the specified
@@ -11,14 +11,16 @@ def remove_rows_with_missing_ratings(df,column_name):
 
     Args:
         df (pandas.DataFrame): The dataframe to remove the rows from
-        column_name (list): List of column names to check for missing values. 
 
     Returns:
         pandas.DataFrame: The dataframe with the rows that contains missing values in 
         specified columns removed. 
     """
     
-    df.dropna(subset = column_name,inplace = True)
+    rating_column_names = ["Cleanliness_rating","Accuracy_rating",
+                           "Communication_rating","Location_rating",
+                           "Check-in_rating","Value_rating"]
+    df.dropna(subset = rating_column_names,inplace = True)
     
     return df
 
@@ -72,6 +74,14 @@ def set_default_feature_values(df):
             
     return df
 
+def clean_tabular_data(df):
+    
+    df = remove_rows_with_missing_ratings(df)
+    df = combine_description_strings(df)
+    df = set_default_feature_values(df)
+    
+    return df
+
 
 if __name__ == "__main__":
 
@@ -79,11 +89,9 @@ if __name__ == "__main__":
     data_path = "data/tabular_data/listing.csv"
     path = os.path.join(working_dir, data_path)
     listing_df = pd.read_csv(path, na_values=np.nan)
-    column_names = listing_df.columns
-    print(column_names)
-    rating_columns = column_names[10:16]
-    listing_df = remove_rows_with_missing_ratings(listing_df,rating_columns)
-    listing_df = set_default_feature_values(listing_df)
-    listing_df = combine_description_strings(listing_df)
-        
+    listing_df = clean_tabular_data(listing_df)
+    save_path = os.path.join(working_dir, "data/tabular_data/clean_tabular_data.csv")
+    
+    listing_df.to_csv(save_path, index = False)
+
     print(listing_df["Description"])
