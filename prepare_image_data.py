@@ -7,6 +7,13 @@ def download_images():
     pass
 
 def resize_images():
+    """Resize property images
+
+    This function resizes all the images in the images folder by changing the heights of
+    the images but at the same time maintaining the aspect ratio of the images. The resized
+    images is then saved into a new folder named processed_images. This function will also 
+    remove any images which is not RGB.
+    """
     
     image_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),"data/images")
     dir_list = os.listdir(image_dir)
