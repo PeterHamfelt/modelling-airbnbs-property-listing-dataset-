@@ -80,8 +80,23 @@ def clean_tabular_data(df):
     df = combine_description_strings(df)
     df = set_default_feature_values(df)
     
+    df.drop(df.columns[-1], axis = 1, inplace = True)
+    
     return df
 
+def load_airbnb(df, label):
+    labels = df[label]
+    features = df.drop(label, axis = 1)
+    
+    column_list = list(features.columns.values)
+    
+    for column in column_list:
+        
+        if features[column].dtype != "float64":
+            features.drop(column, axis = 1, inplace = True)
+    
+    return (features,labels)
+    
 
 if __name__ == "__main__":
 
@@ -93,5 +108,8 @@ if __name__ == "__main__":
     save_path = os.path.join(working_dir, "data/tabular_data/clean_tabular_data.csv")
     
     listing_df.to_csv(save_path, index = False)
-
-    print(listing_df["Description"])
+    
+    features, labels = load_airbnb(listing_df,"Price_Night")
+    
+    print(features.head(10))
+    print(labels.head(10))
