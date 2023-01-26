@@ -75,6 +75,16 @@ def set_default_feature_values(df):
     return df
 
 def clean_tabular_data(df):
+    """Clean tabular data
+
+    Cleans the tabular data by calling the three other functions defined above.
+
+    Args:
+        df (pandas.DataFrame): The dataframe which contains dirty data
+
+    Returns:
+        pandas.DataFrame: Processed and clean dataframe
+    """
     
     df = remove_rows_with_missing_ratings(df)
     df = combine_description_strings(df)
@@ -85,6 +95,19 @@ def clean_tabular_data(df):
     return df
 
 def load_airbnb(df, label):
+    """Split clean data 
+
+    Split the clean data into features and label dataframe. The features dataframe
+    will only contain numerical data that will be used to predict the label. 
+
+    Args:
+        df (pandas.DataFrame): The dataframe which contains clean data.
+        label (str): The column name which the model will be predicting
+
+    Returns:
+       tuple : A tuple which contains the features and labels.
+    """
+    
     labels = df[label]
     features = df.drop(label, axis = 1)
     
