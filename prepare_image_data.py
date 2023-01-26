@@ -1,11 +1,13 @@
 from PIL import Image
 import os
 import glob
+import shutil
 
 def download_images():
     pass
 
 def resize_images():
+    
     image_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),"data/images")
     dir_list = os.listdir(image_dir)
     
@@ -17,32 +19,45 @@ def resize_images():
         
         image_folder_list.append(glob.glob(image_folder +"/*.png"))
         
-    for image_folder in image_folder_list:
+    for img_num, image_folder in enumerate(image_folder_list):
         
         for image in image_folder:
-        
-            print(image)
             
             img = Image.open(image)
             _, height = img.size
             
             if img.mode != "RGB":
-                image_folder_list.remove(image)
+                image_folder_list.pop(img_num)
                 break
             
             if min_image_height == None:
-                min_image_height = height
+                min_image_height = int(height)
             elif height < min_image_height:
-                min_image_height = height
-            
-            print(height)
-            
-            
+                min_image_height = int(height)
         
+    alter_image_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),"data/processed_images")     
+        
+    if os.path.exists(alter_image_path) == False:
+        os.makedirs(alter_image_path)
+    else:
+        shutil.rmtree(alter_image_path)
+        os.makedirs(alter_image_path)  
+        
+    for image_folder in image_folder_list:
+        
+        for image in image_folder:
             
+            image_name = image.split("\\")[-1]
+            save_image_dir = os.path.join(alter_image_path,image_name)
             
-
+            img = Image.open(image)
             
+            img_current_width , img_current_height = img.size
+            
+            img_new_width = int(img_current_width*(min_image_height/img_current_height))
+            
+            new_image = img.resize((img_new_width,min_image_height))
+            new_image.save(save_image_dir)                     
     
     
 alter_images = resize_images()
