@@ -8,8 +8,8 @@ from sklearn.metrics import mean_squared_error
 from tabular_data import load_airbnb
 
 def plot_prediction(y_pred,y_true):
-    y_pred = y_pred[:10]
-    y_true = y_true[:10]
+    y_pred = y_pred
+    y_true = y_true
     samples = len(y_pred)
     plt.figure()
     plt.scatter(np.arange(samples), y_pred, c='r', label='predictions')
