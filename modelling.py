@@ -4,7 +4,7 @@ import os
 import matplotlib.pyplot as plt
 from sklearn import model_selection
 from sklearn.linear_model import SGDRegressor
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error,r2_score
 from tabular_data import load_airbnb
 
 def plot_prediction(y_pred,y_true):
@@ -33,7 +33,8 @@ model.fit(x_train,y_train)
 
 y_pred = model.predict(x_test)
 
-MSE = mean_squared_error(y_test,y_pred)
-print(MSE)
+RMSE = mean_squared_error(y_test,y_pred,squared=False)
+r2 = r2_score(y_test,y_pred)
+print(f"The model RMSE is {RMSE} and r2 score is {r2}")
 
 graph_1 = plot_prediction(y_pred,y_test)
