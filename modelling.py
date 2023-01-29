@@ -1,0 +1,39 @@
+import numpy as np
+import pandas as pd
+import os
+import matplotlib.pyplot as plt
+from sklearn import model_selection
+from sklearn.linear_model import SGDRegressor
+from sklearn.metrics import mean_squared_error
+from tabular_data import load_airbnb
+
+def plot_prediction(y_pred,y_true):
+    y_pred = y_pred[:10]
+    y_true = y_true[:10]
+    samples = len(y_pred)
+    plt.figure()
+    plt.scatter(np.arange(samples), y_pred, c='r', label='predictions')
+    plt.scatter(np.arange(samples), y_true, c='b', label='true labels', marker='x')
+    plt.legend()
+    plt.xlabel('Sample numbers')
+    plt.ylabel('Values')
+    plt.show()   
+
+
+script_dir = os.path.dirname(os.path.realpath(__file__))
+
+df = pd.read_csv(os.path.join(script_dir,"data/tabular_data/clean_tabular_data.csv"))
+
+X,y = load_airbnb(df,"Price_Night")
+
+x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y ,test_size = 0.15)
+
+model = SGDRegressor(learning_rate= "adaptive")
+model.fit(x_train,y_train)
+
+y_pred = model.predict(x_test)
+
+MSE = mean_squared_error(y_test,y_pred)
+print(MSE)
+
+graph_1 = plot_prediction(y_pred,y_test)
