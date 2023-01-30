@@ -8,6 +8,7 @@ from sklearn.linear_model import SGDRegressor
 from sklearn.metrics import mean_squared_error,r2_score
 from tabular_data import load_airbnb
 from sklearn.preprocessing import normalize
+from sklearn.model_selection import GridSearchCV
 
 
 def plot_prediction(y_pred,y_true):
@@ -64,26 +65,38 @@ def create_hyperparameter_grid(hyperparameter_dict: dict):
     print(combination_grid)
     
     return combination_grid   
+
+def tune_regression_model_hyperparameters(model_type,hyperparameter_dict:dict):
+    model = model_type()
+    
+    gs = GridSearchCV(model,
+                      hyperparameter_dict,
+                      scoring = "neg_root_mean_squared_error")
+    
+    gs.fit(x_train,y_train)
+
+    y_test_pred = gs.predict(x_test)
+    y_val_pred = gs.predict(x_val)
+    
+    y_test_RMSE = np.sqrt(mean_squared_error(y_test, y_test_pred))
+    y_val_RMSE = np.sqrt(mean_squared_error(y_val, y_val_pred))
+    
+    print(y_test_RMSE, y_val_RMSE)
+    
+    return gs, gs.best_params_, gs.best_score_
+    
     
 script_dir = os.path.dirname(os.path.realpath(__file__))
 df = pd.read_csv(os.path.join(script_dir,"data/tabular_data/clean_tabular_data.csv"))
 X,y = load_airbnb(df,"Price_Night")
+X = normalize(X)
+x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size= 0.3)
+x_val, x_test, y_val, y_test = model_selection.train_test_split(x_test,y_test, test_size=0.5)
 hyperparameters = {"learning_rate":["invscaling","adaptive"],"eta0":np.linspace(0.01,0.001,5)}
 
-hyperparameters_combination = create_hyperparameter_grid(hyperparameters)
+# hyperparameters_combination = create_hyperparameter_grid(hyperparameters)
+# best_model = custom_tune_regression_model_hyperparameters(SGDRegressor,X,y,hyperparameters_combination)
 
-best_model = custom_tune_regression_model_hyperparameters(SGDRegressor,X,y,hyperparameters_combination)
+best_model, best_hyperparameter_combination, best_RMSE = tune_regression_model_hyperparameters(SGDRegressor,hyperparameters)
 
-# x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size= 0.3)
-# x_val, x_test, y_val, y_test = model_selection.train_test_split(x_test,y_test, test_size=0.5)
-
-# model = SGDRegressor(verbose = 2)
-# model.fit(x_train,y_train)
-
-# y_pred = model.predict(x_test)
-
-# RMSE = np.sqrt(mean_squared_error(y_test,y_pred))
-# r2 = r2_score(y_test,y_pred)
-# print(f"The model RMSE is {RMSE} and r2 score is {r2}")
-
-# graph_1 = plot_prediction(y_pred,y_test)
+print(best_hyperparameter_combination,best_RMSE)
