@@ -75,28 +75,30 @@ def tune_regression_model_hyperparameters(model_type,hyperparameter_dict:dict):
     
     gs.fit(x_train,y_train)
 
+    y_train_pred = gs.predict(x_train)
     y_test_pred = gs.predict(x_test)
     y_val_pred = gs.predict(x_val)
     
+    y_train_RMSE = np.sqrt(mean_squared_error(y_train,y_train_pred))
     y_test_RMSE = np.sqrt(mean_squared_error(y_test, y_test_pred))
     y_val_RMSE = np.sqrt(mean_squared_error(y_val, y_val_pred))
+    performance_metrics = {"Train RMSE": y_train_RMSE,"Test RMSE": y_test_RMSE, "Validation RMSE": y_val_RMSE}
     
     print(y_test_RMSE, y_val_RMSE)
     
-    return gs, gs.best_params_, gs.best_score_
-    
+    return gs, performance_metrics, gs.best_params_, gs.best_score_
     
 script_dir = os.path.dirname(os.path.realpath(__file__))
 df = pd.read_csv(os.path.join(script_dir,"data/tabular_data/clean_tabular_data.csv"))
 X,y = load_airbnb(df,"Price_Night")
 X = normalize(X)
-x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size= 0.3)
-x_val, x_test, y_val, y_test = model_selection.train_test_split(x_test,y_test, test_size=0.5)
+x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size= 0.3, random_state= 42)
+x_val, x_test, y_val, y_test = model_selection.train_test_split(x_test,y_test, test_size=0.5, random_state= 42)
 hyperparameters = {"learning_rate":["invscaling","adaptive"],"eta0":np.linspace(0.01,0.001,5)}
 
 # hyperparameters_combination = create_hyperparameter_grid(hyperparameters)
 # best_model = custom_tune_regression_model_hyperparameters(SGDRegressor,X,y,hyperparameters_combination)
 
-best_model, best_hyperparameter_combination, best_RMSE = tune_regression_model_hyperparameters(SGDRegressor,hyperparameters)
+best_model, performance_metrics ,best_hyperparameter_combination, best_RMSE = tune_regression_model_hyperparameters(SGDRegressor,hyperparameters)
 
 print(best_hyperparameter_combination,best_RMSE)
