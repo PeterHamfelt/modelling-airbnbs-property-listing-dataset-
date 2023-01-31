@@ -3,6 +3,8 @@ import pandas as pd
 import os
 import itertools
 import matplotlib.pyplot as plt
+import joblib
+import json
 from sklearn import model_selection
 from sklearn.linear_model import SGDRegressor
 from sklearn.metrics import mean_squared_error,r2_score
@@ -87,6 +89,25 @@ def tune_regression_model_hyperparameters(model_type,hyperparameter_dict:dict):
     print(y_test_RMSE, y_val_RMSE)
     
     return gs, performance_metrics, gs.best_params_, gs.best_score_
+
+def save_model(model,performance_metrics,hyperparameter_combination,folder):
+    working_dir = os.path.dirname(os.path.realpath(__file__))
+    save_dir = os.path.join(working_dir,folder)
+    model_saved_path = os.path.join(save_dir,"model.joblib")
+    hyperparameter_json = os.path.join(save_dir,"hyperparameters.json")
+    performance_metrics_json = os.path.join(save_dir,"metrics.json")
+    
+    if os.path.exists(save_dir) == False:
+        os.makedirs(save_dir)
+        
+    joblib.dump(model,model_saved_path)
+    
+    with open(hyperparameter_json,"w") as file:
+        json.dump(hyperparameter_combination,file)
+    
+    with open(performance_metrics_json,"w") as file:
+        json.dump(performance_metrics,file)
+    
     
 script_dir = os.path.dirname(os.path.realpath(__file__))
 df = pd.read_csv(os.path.join(script_dir,"data/tabular_data/clean_tabular_data.csv"))
@@ -100,5 +121,5 @@ hyperparameters = {"learning_rate":["invscaling","adaptive"],"eta0":np.linspace(
 # best_model = custom_tune_regression_model_hyperparameters(SGDRegressor,X,y,hyperparameters_combination)
 
 best_model, performance_metrics ,best_hyperparameter_combination, best_RMSE = tune_regression_model_hyperparameters(SGDRegressor,hyperparameters)
-
-print(best_hyperparameter_combination,best_RMSE)
+save_model_folder = "models/regression/linear_regression"
+save_model(best_model,performance_metrics,best_hyperparameter_combination,save_model_folder)
