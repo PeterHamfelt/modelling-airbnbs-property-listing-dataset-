@@ -14,6 +14,15 @@ from sklearn.model_selection import GridSearchCV
 
 
 def plot_prediction(y_pred,y_true):
+    """Plot prediction vs actual
+
+   Plot scatter plot using matplotlib to visualise and compare the values predicted by the model and 
+   the actual value. 
+
+    Args:
+        y_pred (np.array): THe predicted values made by the model
+        y_true (np.array): The actual values for the predicting label
+    """
     y_pred = y_pred
     y_true = y_true
     samples = len(y_pred)
@@ -26,6 +35,25 @@ def plot_prediction(y_pred,y_true):
     plt.show()   
     
 def custom_tune_regression_model_hyperparameters(model_type, X,y, hyperparameter_grid: list):
+    """Tune regression model's hyperparameters
+
+    This function will first normalise the features of the dataset before splitting them into training,
+    testing and validation sets. It will then loop through all the possible combination of hyperparameters
+    generated using the create_hyperparameter_grid() function to find the combination of hyperparameters which
+    will produce the best performing model. 
+
+    Args:
+        model_type (_type_): The model to be tuned.  
+        X (_type_): Features columns
+        y (_type_): Label columns
+        hyperparameter_grid (list): List of dictionary of all possible combination of hyperparameters.
+
+    Returns:
+        sklearn.linear_model: The best performing model 
+        dict: A dictionary of the best combination of hyperparameters and its values
+        dict: A dictionary which consist of the train, test and validation RMSE values
+    """
+    
     X = normalize(X)
     x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size= 0.3)
     x_val, x_test, y_val, y_test = model_selection.train_test_split(x_test,y_test, test_size=0.5)
@@ -59,6 +87,18 @@ def custom_tune_regression_model_hyperparameters(model_type, X,y, hyperparameter
     return best_model, best_hyperparameter_combination, best_performance_metrics
 
 def create_hyperparameter_grid(hyperparameter_dict: dict):
+    """Create hyperparameter grid
+
+    The function takes in a hyperparameter dictionary which consist of all the different hyperparameters
+    and the values to try then generate a list of dictionary where each dictionary is a different combination
+    of hyperparameters.  
+    
+    Args:
+        hyperparameter_dict (dict): A dictionary that consist of the different hyperparameters and its values to try.
+
+    Returns:
+        list: All possible combination of hyperparameters in each dictionary. 
+    """
     hyperparameters = hyperparameter_dict.keys()
     values = hyperparameter_dict.values()
     hyperparameter_combinations = itertools.product(*values)
@@ -69,6 +109,21 @@ def create_hyperparameter_grid(hyperparameter_dict: dict):
     return combination_grid   
 
 def tune_regression_model_hyperparameters(model_type,hyperparameter_dict:dict):
+    """Tune model using GridSearchCV
+
+    This function uses Sklearn's GridSearchCV to search for the best possible combination of hyperparameters to 
+    achieve the best model. 
+
+    Args:
+        model_type (sklearn): The Sklearn model type to perform grid search on
+        hyperparameter_dict (dict): The dictionary which consist of the hyperparameters and its values to be tried.
+
+    Returns:
+        sklearn.linear_model: The best performing model 
+        dict: A dictionary which consist of the train, test and validation RMSE values
+        dict: A dictionary of the best combination of hyperparameters and its values
+        np.float64: The best score achieved during grid search
+    """
     model = model_type()
     
     gs = GridSearchCV(model,
@@ -91,6 +146,20 @@ def tune_regression_model_hyperparameters(model_type,hyperparameter_dict:dict):
     return gs, performance_metrics, gs.best_params_, gs.best_score_
 
 def save_model(model,performance_metrics,hyperparameter_combination,folder):
+    """Save model
+
+    Save the best performing model together with the model's performance metrics and hyperparameter combination
+    to the local folder name "models/regression/linear_regression". The function will first check if the local folder
+    exist. If it doesn not exist it will make the folder before saving the model as a joblib file and the hyperparameter
+    and performance metrics as json file.
+
+    Args:
+        model (Sklearn): The best performing model to be saved
+        performance_metrics (dict): The performance metrics associated with the best performing model. It includes the
+        training, testing and validation RMSE.
+        hyperparameter_combination (dict): The combination of hyperparameter used to achieved the best performing model.
+        folder (str): The folder directory.
+    """
     working_dir = os.path.dirname(os.path.realpath(__file__))
     save_dir = os.path.join(working_dir,folder)
     model_saved_path = os.path.join(save_dir,"model.joblib")
