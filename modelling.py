@@ -11,6 +11,8 @@ from sklearn.metrics import mean_squared_error,r2_score
 from tabular_data import load_airbnb
 from sklearn.preprocessing import normalize
 from sklearn.model_selection import GridSearchCV
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 
 
 def plot_prediction(y_pred,y_true):
@@ -176,7 +178,14 @@ def save_model(model,performance_metrics,hyperparameter_combination,folder):
     
     with open(performance_metrics_json,"w") as file:
         json.dump(performance_metrics,file)
+        
+def k_fold_validation(dataset, n_splits: int = 5):
+    split_data = np.array_split(dataset,n_splits)
     
+    for idx in range(n_splits):
+        training_data = split_data[:idx] + split_data[idx + 1 :]
+        validation_data = split_data[idx]
+        yield np.concatenate(training_data), validation_data
     
 script_dir = os.path.dirname(os.path.realpath(__file__))
 df = pd.read_csv(os.path.join(script_dir,"data/tabular_data/clean_tabular_data.csv"))
@@ -189,6 +198,8 @@ hyperparameters = {"learning_rate":["invscaling","adaptive"],"eta0":np.linspace(
 # hyperparameters_combination = create_hyperparameter_grid(hyperparameters)
 # best_model = custom_tune_regression_model_hyperparameters(SGDRegressor,X,y,hyperparameters_combination)
 
-best_model, performance_metrics ,best_hyperparameter_combination, best_RMSE = tune_regression_model_hyperparameters(SGDRegressor,hyperparameters)
-save_model_folder = "models/regression/linear_regression"
-save_model(best_model,performance_metrics,best_hyperparameter_combination,save_model_folder)
+# best_model, performance_metrics ,best_hyperparameter_combination, best_RMSE = tune_regression_model_hyperparameters(SGDRegressor,hyperparameters)
+# save_model_folder = "models/regression/linear_regression"
+# save_model(best_model,performance_metrics,best_hyperparameter_combination,save_model_folder)
+
+model_list = [DecisionTreeRegressor,RandomForestRegressor,GradientBoostingRegressor]
