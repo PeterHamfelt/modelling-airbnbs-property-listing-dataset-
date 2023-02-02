@@ -178,6 +178,20 @@ def save_model(model,performance_metrics,hyperparameter_combination,folder):
     
     with open(performance_metrics_json,"w") as file:
         json.dump(performance_metrics,file)
+        
+def evaluate_all_models(model_list):
+    
+    for model_type in model_list:
+        
+        if model_type == GradientBoostingRegressor:
+            hyperparameter_dict = {"learning_rate": [0.1,0.01,0.001], 
+                   "subsample": [1.0,0.1,0.01], 
+                   "n_estimators":[10,50,100],
+                   "max_depth": [4,6,8]}
+            
+        best_model = tune_regression_model_hyperparameters(model_type,hyperparameter_dict)
+        
+    return best_model
     
 script_dir = os.path.dirname(os.path.realpath(__file__))
 df = pd.read_csv(os.path.join(script_dir,"data/tabular_data/clean_tabular_data.csv"))
@@ -194,4 +208,6 @@ hyperparameters = {"learning_rate":["invscaling","adaptive"],"eta0":np.linspace(
 # save_model_folder = "models/regression/linear_regression"
 # save_model(best_model,performance_metrics,best_hyperparameter_combination,save_model_folder)
 
-model_list = [DecisionTreeRegressor,RandomForestRegressor,GradientBoostingRegressor]
+model_list = [GradientBoostingRegressor]
+
+best_model = evaluate_all_models(model_list)
