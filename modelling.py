@@ -198,6 +198,36 @@ def evaluate_all_models(model_list,hyperparameter_list):
         save_path = "models/regression/{}".format(type(model).__name__)
         
         save_model(model,performance_metrics,model_params,save_path)
+        
+def find_best_model():
+    model_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)),"models/regression")
+    different_models_folder = [folder[0] for folder in os.walk(model_folder)][1:]
+    
+    best_validation_RMSE = np.inf
+    
+    for idx ,model_files in enumerate(different_models_folder):
+        
+        performance_metrics_path = os.path.join(model_files,"metrics.json")
+        
+        with open(performance_metrics_path) as file:
+            performance_metric = json.load(file)
+            
+        if performance_metric["Validation RMSE"] < best_validation_RMSE:
+            best_model_folder_index = idx
+            best_model_performance_metrics = performance_metric
+        
+    model_path = os.path.join(different_models_folder[best_model_folder_index],"model.joblib")
+    hyperparameter_path = os.path.join(different_models_folder[best_model_folder_index],"hyperparameters.json")
+    
+    with open(model_path, "rb") as file:
+        best_model = joblib.load(file)
+    
+    with open(hyperparameter_path) as file:
+        best_model_hyperparameters = json.load(file)
+    
+    print(model_path,hyperparameter_path)
+    
+    return best_model, best_model_hyperparameters, best_model_performance_metrics
     
 script_dir = os.path.dirname(os.path.realpath(__file__))
 df = pd.read_csv(os.path.join(script_dir,"data/tabular_data/clean_tabular_data.csv"))
@@ -232,3 +262,5 @@ model_list = [GradientBoostingRegressor, DecisionTreeRegressor, RandomForestRegr
 hyperparameter_list = [gbr_hyperparameters, dt_hyperparameters,rf_hyperparameters]
 
 best_model = evaluate_all_models(model_list,hyperparameter_list)
+
+best_model = find_best_model()
