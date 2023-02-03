@@ -180,6 +180,16 @@ def save_model(model,performance_metrics,hyperparameter_combination,folder):
         json.dump(performance_metrics,file)
         
 def evaluate_all_models(model_list,hyperparameter_list):
+    """Evaluate different models
+
+    Evaluate the performance of a list of different regression models by tunning their hyperparameters and comparing them
+    to each other and the base linear regression model. At the same time create a folder for each of the models to save the
+    model, its performance metrics and the hyperparameter combination used to achieved that result. 
+
+    Args:
+        model_list (list): A list of the sklearn model to be evaluated. 
+        hyperparameter_list (list): A list of hyperparameter dictionary corresponding to each model. 
+    """
     
     for model_type, hyperparameter_dict in zip(model_list,hyperparameter_list):
         
