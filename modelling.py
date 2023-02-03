@@ -56,7 +56,6 @@ def custom_tune_regression_model_hyperparameters(model_type, X,y, hyperparameter
         dict: A dictionary which consist of the train, test and validation RMSE values
     """
     
-    X = normalize(X)
     x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size= 0.3)
     x_val, x_test, y_val, y_test = model_selection.train_test_split(x_test,y_test, test_size=0.5)
     
@@ -245,22 +244,12 @@ def find_best_model():
     
     return best_model, best_model_hyperparameters, best_model_performance_metrics
 
-    
 script_dir = os.path.dirname(os.path.realpath(__file__))
 df = pd.read_csv(os.path.join(script_dir,"data/tabular_data/clean_tabular_data.csv"))
 X,y = load_airbnb(df,"Price_Night")
-X = normalize(X)
 x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size= 0.3, random_state= 42)
 x_val, x_test, y_val, y_test = model_selection.train_test_split(x_test,y_test, test_size=0.5, random_state= 42)
-hyperparameters = {"learning_rate":["invscaling","adaptive"],"eta0":np.linspace(0.01,0.001,5)}
-
-# hyperparameters_combination = create_hyperparameter_grid(hyperparameters)
-# best_model = custom_tune_regression_model_hyperparameters(SGDRegressor,X,y,hyperparameters_combination)
-
-# best_model, performance_metrics ,best_hyperparameter_combination, best_RMSE = tune_regression_model_hyperparameters(SGDRegressor,hyperparameters)
-# save_model_folder = "models/regression/linear_regression"
-# save_model(best_model,performance_metrics,best_hyperparameter_combination,save_model_folder)
-
+# hyperparameters = {"learning_rate":["invscaling","adaptive"],"eta0":np.linspace(0.01,0.001,5)}
 gbr_hyperparameters = {"learning_rate": [0.1,0.01,0.001], 
                    "subsample": [1.0,0.1,0.01], 
                    "n_estimators":[10,50,100],
@@ -278,6 +267,16 @@ rf_hyperparameters = {"n_estimators":[10,50,100],
 model_list = [GradientBoostingRegressor, DecisionTreeRegressor, RandomForestRegressor]
 hyperparameter_list = [gbr_hyperparameters, dt_hyperparameters,rf_hyperparameters]
 
-best_model = evaluate_all_models(model_list,hyperparameter_list)
+# hyperparameters_combination = create_hyperparameter_grid(hyperparameters)
+# best_model = custom_tune_regression_model_hyperparameters(SGDRegressor,X,y,hyperparameters_combination)
 
-best_model = find_best_model()
+# best_model, performance_metrics ,best_hyperparameter_combination, best_RMSE = tune_regression_model_hyperparameters(SGDRegressor,hyperparameters)
+# save_model_folder = "models/regression/linear_regression"
+# save_model(best_model,performance_metrics,best_hyperparameter_combination,save_model_folder)
+
+if __name__ == "__main__":
+
+    evaluate_all_models(model_list,hyperparameter_list)
+    best_model, best_model_hyperparameters, best_model_performance_metrics = find_best_model()
+
+    

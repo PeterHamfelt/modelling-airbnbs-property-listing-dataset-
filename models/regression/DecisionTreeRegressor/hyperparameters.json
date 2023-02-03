@@ -1,1 +1,1 @@
-{"max_depth": 6, "splitter": "random"}
+{"max_depth": 4, "splitter": "best"}
