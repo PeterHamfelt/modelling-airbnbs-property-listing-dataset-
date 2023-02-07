@@ -316,31 +316,11 @@ if __name__ == "__main__":
     evaluate_all_models(model_list,X,y_regression, hyperparameter_list)
     best_reg_model, best_reg_model_hyperparameters, best_reg_model_performance_metrics = find_best_model()
     
-    
     X, y_classification = load_airbnb(df,"Category")
     x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y_classification, test_size=0.3)
     x_test, x_val, y_test, y_val = model_selection.train_test_split(x_test,y_test,test_size=0.5)
 
-    log_reg = LogisticRegression()
-    log_reg.fit(x_train,y_train)
-
-    y_pred_label = log_reg.predict(x_test)
-    y_pred_percentage = log_reg.predict_proba(x_test)
-    
-    cf = confusion_matrix(y_test,y_pred_label)
-    fig = ConfusionMatrixDisplay(cf)
-    fig.plot()
-    plt.show()
-    
-    accuracy = accuracy_score(y_test,y_pred_label)
-    precision = precision_score(y_test, y_pred_label, average="weighted")
-    recall = recall_score(y_test,y_pred_label, average = "weighted")
-    f1 = f1_score(y_test,y_pred_label, average = "weighted")
-
-    print(f"The model has an accuracy of {accuracy}, precision of {precision}, recall value of {recall} and F1 score of {f1}")
-
     best_clas_model, best_clas_model_hyperparameters, best_clas_model_performance_metrics = tune_classification_model_hyperparameters(LogisticRegression,X,y_classification,log_hyperparameters)
     
-    print(best_clas_model, best_clas_model_hyperparameters, best_clas_model_performance_metrics)
     
     
