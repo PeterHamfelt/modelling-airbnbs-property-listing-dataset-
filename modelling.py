@@ -150,6 +150,19 @@ def tune_regression_model_hyperparameters(model_type,X,y,hyperparameter_dict:dic
     return gs.best_estimator_, performance_metrics, gs.best_params_, gs.best_score_
 
 def tune_classification_model_hyperparameters(model_type,X,y,hyperparameter_dict):
+    """Tune classification model's hyperparameters
+
+    _extended_summary_
+
+    Args:
+        model_type (list): _description_
+        X (_type_): _description_
+        y (_type_): _description_
+        hyperparameter_dict (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     
     x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size=0.3, random_state=42)
     x_test, x_val, y_test, y_val = model_selection.train_test_split(x_test,y_test, test_size=0.5, random_state=42)
@@ -311,15 +324,14 @@ log_hyperparameters = {"penalty":["l2","none"]}
 
 if __name__ == "__main__":
     X,y_regression = load_airbnb(df,"Price_Night")
+    print(type(X), type(y_regression))
     model_list = [GradientBoostingRegressor, DecisionTreeRegressor, RandomForestRegressor]
     hyperparameter_list = [gbr_hyperparameters, dt_hyperparameters,rf_hyperparameters]
     evaluate_all_models(model_list,X,y_regression, hyperparameter_list)
     best_reg_model, best_reg_model_hyperparameters, best_reg_model_performance_metrics = find_best_model()
     
+    
     X, y_classification = load_airbnb(df,"Category")
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y_classification, test_size=0.3)
-    x_test, x_val, y_test, y_val = model_selection.train_test_split(x_test,y_test,test_size=0.5)
-
     best_clas_model, best_clas_model_hyperparameters, best_clas_model_performance_metrics = tune_classification_model_hyperparameters(LogisticRegression,X,y_classification,log_hyperparameters)
     
     
