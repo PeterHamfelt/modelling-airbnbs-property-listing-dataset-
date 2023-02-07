@@ -154,7 +154,7 @@ def tune_classification_model_hyperparameters(model_type,X,y,hyperparameter_dict
     x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size=0.3, random_state=42)
     x_test, x_val, y_test, y_val = model_selection.train_test_split(x_test,y_test, test_size=0.5, random_state=42)
     
-    model = model_type(random_state= 42)
+    model = model_type(random_state= 42, max_iter = 10000)
     
     gs = GridSearchCV(model,
                       hyperparameter_dict)
@@ -300,7 +300,7 @@ rf_hyperparameters = {"n_estimators":[10,50,100],
                       "max_depth":[4,6,8],
                       }
 
-log_hyperparameters = {"penalty":["l2","l1","elasticnet"]}
+log_hyperparameters = {"penalty":["l2","none"]}
 
 # hyperparameters_combination = create_hyperparameter_grid(hyperparameters)
 # best_model = custom_tune_regression_model_hyperparameters(SGDRegressor,X,y,hyperparameters_combination)
