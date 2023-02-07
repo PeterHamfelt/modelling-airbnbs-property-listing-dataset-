@@ -290,10 +290,16 @@ if __name__ == "__main__":
     fig = ConfusionMatrixDisplay(cf)
     fig.plot()
     plt.show()
+    
+    accuracy = accuracy_score(y_test,y_pred_label)
+    precision = precision_score(y_test, y_pred_label, average="weighted")
+    recall = recall_score(y_test,y_pred_label, average = "weighted")
+    f1 = f1_score(y_test,y_pred_label, average = "weighted")
 
-    print(y_pred_label)
-    print(y_pred_percentage)
+    print(f"The model has an accuracy of {accuracy}, precision of {precision}, recall value of {recall} and F1 score of {f1}")
 
+    
+    
     
     
     
