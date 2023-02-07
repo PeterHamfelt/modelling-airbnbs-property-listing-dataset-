@@ -117,6 +117,8 @@ def tune_regression_model_hyperparameters(model_type,X,y,hyperparameter_dict:dic
 
     Args:
         model_type (sklearn): The Sklearn model type to perform grid search on
+        X (pandas.DataFrame): The feature columns which will be used to predict the labels.
+        y (pandas.Series): The sample's target the model is predicting for. 
         hyperparameter_dict (dict): The dictionary which consist of the hyperparameters and its values to be tried.
 
     Returns:
@@ -155,13 +157,16 @@ def tune_classification_model_hyperparameters(model_type,X,y,hyperparameter_dict
     _extended_summary_
 
     Args:
-        model_type (list): _description_
-        X (_type_): _description_
-        y (_type_): _description_
-        hyperparameter_dict (_type_): _description_
+        model_type (list): Classification models to be tried. 
+        X (pandas.DataFrame): The feature columns which will be used to predict the labels.
+        y (pandas.Series): The categorical column the model is trying to predict using the features. 
+        hyperparameter_dict (dict): The dictionary which consist of the hyperparameters and values associated to each model type
+        which will be tried during the grid search. 
 
     Returns:
-        _type_: _description_
+        _type_: Best performing model from obtained from grid search
+        dict: A dictionary of the best combination of hyperparameters and its values
+        dict: The models training, testing and validation accuracy values. 
     """
     
     x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size=0.3, random_state=42)
@@ -240,6 +245,8 @@ def evaluate_all_models(model_list,X,y,hyperparameter_list):
 
     Args:
         model_list (list): A list of the sklearn model to be evaluated. 
+        X (pandas.DataFrame): The feature columns which will be used to predict the labels.
+        y (pandas.Series): The labels the model is predicting.
         hyperparameter_list (list): A list of hyperparameter dictionary corresponding to each model. 
     """
     
