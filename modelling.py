@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 import joblib
 import json
 from sklearn import model_selection
-from sklearn.linear_model import SGDRegressor
-from sklearn.metrics import mean_squared_error,r2_score
+from sklearn.linear_model import SGDRegressor, LogisticRegression
+from sklearn.metrics import mean_squared_error,r2_score, accuracy_score, f1_score, precision_score, recall_score, confusion_matrix, ConfusionMatrixDisplay
 from tabular_data import load_airbnb
 from sklearn.preprocessing import normalize
 from sklearn.model_selection import GridSearchCV
@@ -109,7 +109,7 @@ def create_hyperparameter_grid(hyperparameter_dict: dict):
     
     return combination_grid   
 
-def tune_regression_model_hyperparameters(model_type,hyperparameter_dict:dict):
+def tune_regression_model_hyperparameters(model_type,X,y,hyperparameter_dict:dict):
     """Tune model using GridSearchCV
 
     This function uses Sklearn's GridSearchCV to search for the best possible combination of hyperparameters to 
@@ -125,6 +125,9 @@ def tune_regression_model_hyperparameters(model_type,hyperparameter_dict:dict):
         dict: A dictionary of the best combination of hyperparameters and its values
         np.float64: The best score achieved during grid search
     """
+    x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size=0.3, random_state=42)
+    x_test, x_val, y_test, y_val = model_selection.train_test_split(x_test, y_test, test_size=0.5, random_state=42)
+    
     model = model_type(random_state = 42)
     
     gs = GridSearchCV(model,
@@ -178,7 +181,7 @@ def save_model(model,performance_metrics,hyperparameter_combination,folder):
     with open(performance_metrics_json,"w") as file:
         json.dump(performance_metrics,file)
         
-def evaluate_all_models(model_list,hyperparameter_list):
+def evaluate_all_models(model_list,X,y,hyperparameter_list):
     """Evaluate different models
 
     Evaluate the performance of a list of different regression models by tunning their hyperparameters and comparing them
@@ -192,7 +195,7 @@ def evaluate_all_models(model_list,hyperparameter_list):
     
     for model_type, hyperparameter_dict in zip(model_list,hyperparameter_list):
         
-        model, performance_metrics, model_params, model_best_score = tune_regression_model_hyperparameters(model_type,hyperparameter_dict)
+        model, performance_metrics, model_params, model_best_score = tune_regression_model_hyperparameters(model_type,X,y,hyperparameter_dict)
         
         save_path = "models/regression/{}".format(type(model).__name__)
         
@@ -246,9 +249,6 @@ def find_best_model():
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 df = pd.read_csv(os.path.join(script_dir,"data/tabular_data/clean_tabular_data.csv"))
-X,y = load_airbnb(df,"Price_Night")
-x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size= 0.3, random_state= 42)
-x_val, x_test, y_val, y_test = model_selection.train_test_split(x_test,y_test, test_size=0.5, random_state= 42)
 # hyperparameters = {"learning_rate":["invscaling","adaptive"],"eta0":np.linspace(0.01,0.001,5)}
 gbr_hyperparameters = {"learning_rate": [0.1,0.01,0.001], 
                    "subsample": [1.0,0.1,0.01], 
@@ -263,10 +263,6 @@ rf_hyperparameters = {"n_estimators":[10,50,100],
                       "max_depth":[4,6,8],
                       }
 
-
-model_list = [GradientBoostingRegressor, DecisionTreeRegressor, RandomForestRegressor]
-hyperparameter_list = [gbr_hyperparameters, dt_hyperparameters,rf_hyperparameters]
-
 # hyperparameters_combination = create_hyperparameter_grid(hyperparameters)
 # best_model = custom_tune_regression_model_hyperparameters(SGDRegressor,X,y,hyperparameters_combination)
 
@@ -275,8 +271,29 @@ hyperparameter_list = [gbr_hyperparameters, dt_hyperparameters,rf_hyperparameter
 # save_model(best_model,performance_metrics,best_hyperparameter_combination,save_model_folder)
 
 if __name__ == "__main__":
-
-    evaluate_all_models(model_list,hyperparameter_list)
+    X,y_regression = load_airbnb(df,"Price_Night")
+    model_list = [GradientBoostingRegressor, DecisionTreeRegressor, RandomForestRegressor]
+    hyperparameter_list = [gbr_hyperparameters, dt_hyperparameters,rf_hyperparameters]
+    evaluate_all_models(model_list,X,y_regression, hyperparameter_list)
     best_model, best_model_hyperparameters, best_model_performance_metrics = find_best_model()
+    X, y_classification = load_airbnb(df,"Category")
+    x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y_classification, test_size=0.3)
+    x_test, x_val, y_test, y_val = model_selection.train_test_split(x_test,y_test,test_size=0.5)
 
+    log_reg = LogisticRegression()
+    log_reg.fit(x_train,y_train)
+
+    y_pred_label = log_reg.predict(x_test)
+    y_pred_percentage = log_reg.predict_proba(x_test)
+    
+    cf = confusion_matrix(y_test,y_pred_label)
+    fig = ConfusionMatrixDisplay(cf)
+    fig.plot()
+    plt.show()
+
+    print(y_pred_label)
+    print(y_pred_percentage)
+
+    
+    
     
