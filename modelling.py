@@ -140,14 +140,51 @@ def tune_regression_model_hyperparameters(model_type,X,y,hyperparameter_dict:dic
     y_test_pred = gs.predict(x_test)
     y_val_pred = gs.predict(x_val)
     
-    y_train_RMSE = np.sqrt(mean_squared_error(y_train,y_train_pred))
-    y_test_RMSE = np.sqrt(mean_squared_error(y_test, y_test_pred))
-    y_val_RMSE = np.sqrt(mean_squared_error(y_val, y_val_pred))
-    performance_metrics = {"Train RMSE": y_train_RMSE,"Test RMSE": y_test_RMSE, "Validation RMSE": y_val_RMSE}
+    train_RMSE = np.sqrt(mean_squared_error(y_train,y_train_pred))
+    test_RMSE = np.sqrt(mean_squared_error(y_test, y_test_pred))
+    val_RMSE = np.sqrt(mean_squared_error(y_val, y_val_pred))
+    performance_metrics = {"Train RMSE": train_RMSE,"Test RMSE": test_RMSE, "Validation RMSE": val_RMSE}
     
-    print(y_test_RMSE, y_val_RMSE)
+    print(test_RMSE, val_RMSE)
     
     return gs.best_estimator_, performance_metrics, gs.best_params_, gs.best_score_
+
+def tune_classification_model_hyperparameters(model_type,X,y,hyperparameter_dict):
+    
+    x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size=0.3, random_state=42)
+    x_test, x_val, y_test, y_val = model_selection.train_test_split(x_test,y_test, test_size=0.5, random_state=42)
+    
+    model = model_type(random_state= 42)
+    
+    gs = GridSearchCV(model,
+                      hyperparameter_dict)
+    
+    gs.fit(x_train, y_train)
+    
+    y_train_pred = gs.predict(x_train)
+    y_test_pred = gs.predict(x_test)
+    y_val_pred = gs.predict(x_val)
+    
+    train_acc = accuracy_score(y_train,y_train_pred)
+    test_acc = accuracy_score(y_test,y_test_pred)
+    val_acc = accuracy_score(y_val,y_val_pred)
+    
+    train_f1 = f1_score(y_train, y_train_pred, average="weighted")
+    test_f1 = f1_score(y_test,y_test_pred, average="weighted")
+    val_f1 = f1_score(y_val,y_val_pred, average="weighted")
+    
+    model_accuracy = {"Training Accuracy":train_acc, 
+                      "Testing Accuracy":test_acc, 
+                      "Validation Accuracy": val_acc}
+    
+    model_f1 = {"Training F1 Score":train_f1,
+                 "Testing F1 Score":test_f1,
+                 "Validation F1 Score":val_f1}
+    
+    performance_metrics = {"Model Accuracy":model_accuracy,"Model F1 Score":model_f1}
+    
+    return gs.best_estimator_, gs.best_params_, performance_metrics
+    
 
 def save_model(model,performance_metrics,hyperparameter_combination,folder):
     """Save model
@@ -263,6 +300,8 @@ rf_hyperparameters = {"n_estimators":[10,50,100],
                       "max_depth":[4,6,8],
                       }
 
+log_hyperparameters = {"penalty":["l2","l1","elasticnet"]}
+
 # hyperparameters_combination = create_hyperparameter_grid(hyperparameters)
 # best_model = custom_tune_regression_model_hyperparameters(SGDRegressor,X,y,hyperparameters_combination)
 
@@ -275,7 +314,9 @@ if __name__ == "__main__":
     model_list = [GradientBoostingRegressor, DecisionTreeRegressor, RandomForestRegressor]
     hyperparameter_list = [gbr_hyperparameters, dt_hyperparameters,rf_hyperparameters]
     evaluate_all_models(model_list,X,y_regression, hyperparameter_list)
-    best_model, best_model_hyperparameters, best_model_performance_metrics = find_best_model()
+    best_reg_model, best_reg_model_hyperparameters, best_reg_model_performance_metrics = find_best_model()
+    
+    
     X, y_classification = load_airbnb(df,"Category")
     x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y_classification, test_size=0.3)
     x_test, x_val, y_test, y_val = model_selection.train_test_split(x_test,y_test,test_size=0.5)
@@ -298,8 +339,8 @@ if __name__ == "__main__":
 
     print(f"The model has an accuracy of {accuracy}, precision of {precision}, recall value of {recall} and F1 score of {f1}")
 
+    best_clas_model, best_clas_model_hyperparameters, best_clas_model_performance_metrics = tune_classification_model_hyperparameters(LogisticRegression,X,y_classification,log_hyperparameters)
     
-    
-    
+    print(best_clas_model, best_clas_model_hyperparameters, best_clas_model_performance_metrics)
     
     
