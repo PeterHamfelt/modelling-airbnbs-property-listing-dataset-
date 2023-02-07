@@ -331,7 +331,6 @@ log_hyperparameters = {"penalty":["l2","none"]}
 
 if __name__ == "__main__":
     X,y_regression = load_airbnb(df,"Price_Night")
-    print(type(X), type(y_regression))
     model_list = [GradientBoostingRegressor, DecisionTreeRegressor, RandomForestRegressor]
     hyperparameter_list = [gbr_hyperparameters, dt_hyperparameters,rf_hyperparameters]
     evaluate_all_models(model_list,X,y_regression, hyperparameter_list)
@@ -341,5 +340,6 @@ if __name__ == "__main__":
     X, y_classification = load_airbnb(df,"Category")
     best_clas_model, best_clas_model_hyperparameters, best_clas_model_performance_metrics = tune_classification_model_hyperparameters(LogisticRegression,X,y_classification,log_hyperparameters)
     
+    save_model(best_clas_model,best_clas_model_performance_metrics,best_clas_model_hyperparameters,"models/classification/logistic_regression")
     
     
