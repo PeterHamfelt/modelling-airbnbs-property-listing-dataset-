@@ -5,6 +5,7 @@ import itertools
 import matplotlib.pyplot as plt
 import joblib
 import json
+import shutil
 from sklearn import model_selection
 from sklearn.linear_model import SGDRegressor, LogisticRegression
 from sklearn.metrics import mean_squared_error,r2_score, accuracy_score, f1_score, precision_score, recall_score, confusion_matrix, ConfusionMatrixDisplay
@@ -203,6 +204,97 @@ def tune_classification_model_hyperparameters(model_type,X,y,hyperparameter_dict
     
     return gs.best_estimator_, gs.best_params_, performance_metrics
     
+        
+def evaluate_all_models(model_list,X,y,hyperparameter_list,reg_or_class):
+    """Evaluate different models
+
+    Evaluate the performance of a list of different regression models by tunning their hyperparameters and comparing them
+    to each other and the base linear regression model. At the same time create a folder for each of the models to save the
+    model, its performance metrics and the hyperparameter combination used to achieved that result. 
+
+    Args:
+        model_list (list): A list of the sklearn model to be evaluated. 
+        X (pandas.DataFrame): The feature columns which will be used to predict the labels.
+        y (pandas.Series): The labels the model is predicting.
+        hyperparameter_list (list): A list of hyperparameter dictionary corresponding to each model. 
+        reg_or_class (str): To evaluate regression models, use reg_or_class = "reg" and for classification models, use
+        reg_or_class = "class".
+    """
+    
+    if reg_or_class.lower() == "reg":
+        save_upper_path = "models/regression"
+    elif reg_or_class.lower() == "class":
+        save_upper_path = "models/classification"
+    
+    for model_type, hyperparameter_dict in zip(model_list,hyperparameter_list):
+        
+        model, performance_metrics, model_params, model_best_score = tune_regression_model_hyperparameters(model_type,X,y,hyperparameter_dict)
+        
+        save_path = "{}/{}".format(save_upper_path ,type(model).__name__)
+        full_save_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),save_path)
+        
+        save_model(model,performance_metrics,model_params,full_save_path)
+        
+def find_best_model(reg_or_class:str):
+    """Find the best performing model
+
+    This function finds the best performing model from all the saved models in the model/regression folder by firstly loading
+    in and appending all the model's validation RMSE value into a list. From the list, the position of the lowest RMSE value can 
+    be obtained and used to index the best model's path from the list of model's directory. From the best model's path, the best 
+    model and its associated hyperparameters and performance metrics then can be load in. 
+    
+    Args:
+        reg_or_class (str) = Find which type of model, the best model for classification or regression. reg_or_class = "reg" for 
+        regression model and reg_or_class = "class" for classification model. 
+    
+    Returns:
+        _type_: The best sklearn model
+        dict : The hyperparameters associated with the best model.
+        dict : The performance metrics assocaited with the best model.  
+    """
+    if reg_or_class.lower() == "reg":
+        model_type = "regression"
+    elif reg_or_class.lower() == "class":
+        model_type = "classification"
+        
+    model_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)),f"models/{model_type}")
+    different_models_folder = [folder[0] for folder in os.walk(model_folder)][1:]
+    
+    model_performance_metric_list = []
+    
+    for model_files in different_models_folder:
+        
+        performance_metrics_path = os.path.join(model_files,"metrics.json")
+        
+        with open(performance_metrics_path) as file:
+            performance_metric_dict = json.load(file)
+            
+        
+        if reg_or_class.lower() == "reg":    
+            model_performance_metric_list.append(performance_metric_dict["Validation RMSE"])
+        elif reg_or_class.lower() == "class":
+            model_performance_metric_list.append(performance_metric_dict["Model F1 Score"]["Validation F1 Score"])
+    
+    if reg_or_class.lower() == "reg":
+        performance_metric = min(model_performance_metric_list)
+    elif reg_or_class.lower() == "class":
+        performance_metric = max(model_performance_metric_list)
+            
+    best_model_folder_index = model_performance_metric_list.index(performance_metric)
+    model_path = os.path.join(different_models_folder[best_model_folder_index],"model.joblib")
+    hyperparameter_path = os.path.join(different_models_folder[best_model_folder_index],"hyperparameters.json")
+    performance_metrics_path = os.path.join(different_models_folder[best_model_folder_index],"metrics.json")
+    
+    with open(model_path, "rb") as file:
+        best_model = joblib.load(file)
+    
+    with open(hyperparameter_path) as file:
+        best_model_hyperparameters = json.load(file)
+        
+    with open(performance_metrics_path) as file:
+        best_model_performance_metrics = json.load(file)
+    
+    return best_model, best_model_hyperparameters, best_model_performance_metrics
 
 def save_model(model,performance_metrics,hyperparameter_combination,folder):
     """Save model
@@ -225,8 +317,10 @@ def save_model(model,performance_metrics,hyperparameter_combination,folder):
     hyperparameter_json = os.path.join(save_dir,"hyperparameters.json")
     performance_metrics_json = os.path.join(save_dir,"metrics.json")
     
-    if os.path.exists(save_dir) == False:
-        os.makedirs(save_dir)
+    if os.path.exists(save_dir) == True:
+        shutil.rmtree(save_dir)
+        
+    os.makedirs(save_dir)
         
     joblib.dump(model,model_saved_path)
     
@@ -235,74 +329,6 @@ def save_model(model,performance_metrics,hyperparameter_combination,folder):
     
     with open(performance_metrics_json,"w") as file:
         json.dump(performance_metrics,file)
-        
-def evaluate_all_models(model_list,X,y,hyperparameter_list):
-    """Evaluate different models
-
-    Evaluate the performance of a list of different regression models by tunning their hyperparameters and comparing them
-    to each other and the base linear regression model. At the same time create a folder for each of the models to save the
-    model, its performance metrics and the hyperparameter combination used to achieved that result. 
-
-    Args:
-        model_list (list): A list of the sklearn model to be evaluated. 
-        X (pandas.DataFrame): The feature columns which will be used to predict the labels.
-        y (pandas.Series): The labels the model is predicting.
-        hyperparameter_list (list): A list of hyperparameter dictionary corresponding to each model. 
-    """
-    
-    for model_type, hyperparameter_dict in zip(model_list,hyperparameter_list):
-        
-        model, performance_metrics, model_params, model_best_score = tune_regression_model_hyperparameters(model_type,X,y,hyperparameter_dict)
-        
-        save_path = "models/regression/{}".format(type(model).__name__)
-        
-        save_model(model,performance_metrics,model_params,save_path)
-        
-def find_best_model():
-    """Find the best performing model
-
-    This function finds the best performing model from all the saved models in the model/regression folder by firstly loading
-    in and appending all the model's validation RMSE value into a list. From the list, the position of the lowest RMSE value can 
-    be obtained and used to index the best model's path from the list of model's directory. From the best model's path, the best 
-    model and its associated hyperparameters and performance metrics then can be load in. 
-    
-    Returns:
-        _type_: The best sklearn model
-        dict : The hyperparameters associated with the best model.
-        dict : The performance metrics assocaited with the best model.  
-    """
-    model_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)),"models/regression")
-    different_models_folder = [folder[0] for folder in os.walk(model_folder)][1:]
-    
-    validation_RMSE_list = []
-    
-    for model_files in different_models_folder:
-        
-        performance_metrics_path = os.path.join(model_files,"metrics.json")
-        
-        with open(performance_metrics_path) as file:
-            performance_metric = json.load(file)
-            
-        validation_RMSE_list.append(performance_metric["Validation RMSE"])
-        
-    lowest_RMSE = min(validation_RMSE_list)
-    best_model_folder_index = validation_RMSE_list.index(lowest_RMSE)
-    model_path = os.path.join(different_models_folder[best_model_folder_index],"model.joblib")
-    hyperparameter_path = os.path.join(different_models_folder[best_model_folder_index],"hyperparameters.json")
-    performance_metrics_path = os.path.join(different_models_folder[best_model_folder_index],"metrics.json")
-    
-    with open(model_path, "rb") as file:
-        best_model = joblib.load(file)
-    
-    with open(hyperparameter_path) as file:
-        best_model_hyperparameters = json.load(file)
-        
-    with open(performance_metrics_path) as file:
-        best_model_performance_metrics = json.load(file)
-    
-    print(model_path,hyperparameter_path)
-    
-    return best_model, best_model_hyperparameters, best_model_performance_metrics
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 df = pd.read_csv(os.path.join(script_dir,"data/tabular_data/clean_tabular_data.csv"))
@@ -322,6 +348,12 @@ rf_hyperparameters = {"n_estimators":[10,50,100],
 
 log_hyperparameters = {"penalty":["l2","none"]}
 
+regression_model_list = [GradientBoostingRegressor, DecisionTreeRegressor, RandomForestRegressor]
+regression_hyperparameter_list = [gbr_hyperparameters, dt_hyperparameters,rf_hyperparameters]
+
+classification_model_list = []
+classification_hyperparameter_list =[]
+
 # hyperparameters_combination = create_hyperparameter_grid(hyperparameters)
 # best_model = custom_tune_regression_model_hyperparameters(SGDRegressor,X,y,hyperparameters_combination)
 
@@ -331,13 +363,12 @@ log_hyperparameters = {"penalty":["l2","none"]}
 
 if __name__ == "__main__":
     X,y_regression = load_airbnb(df,"Price_Night")
-    model_list = [GradientBoostingRegressor, DecisionTreeRegressor, RandomForestRegressor]
-    hyperparameter_list = [gbr_hyperparameters, dt_hyperparameters,rf_hyperparameters]
-    evaluate_all_models(model_list,X,y_regression, hyperparameter_list)
-    best_reg_model, best_reg_model_hyperparameters, best_reg_model_performance_metrics = find_best_model()
+    evaluate_all_models(regression_model_list,X,y_regression, regression_hyperparameter_list,"reg")
+    best_reg_model, best_reg_model_hyperparameters, best_reg_model_performance_metrics = find_best_model("reg")
     
     
     X, y_classification = load_airbnb(df,"Category")
+    
     best_clas_model, best_clas_model_hyperparameters, best_clas_model_performance_metrics = tune_classification_model_hyperparameters(LogisticRegression,X,y_classification,log_hyperparameters)
     
     save_model(best_clas_model,best_clas_model_performance_metrics,best_clas_model_hyperparameters,"models/classification/logistic_regression")
