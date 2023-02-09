@@ -128,8 +128,8 @@ def tune_regression_model_hyperparameters(model_type,X,y,hyperparameter_dict:dic
         dict: A dictionary of the best combination of hyperparameters and its values
         np.float64: The best score achieved during grid search
     """
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size=0.3, random_state=42)
-    x_test, x_val, y_test, y_val = model_selection.train_test_split(x_test, y_test, test_size=0.5, random_state=42)
+    x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size=0.3, random_state=40)
+    x_test, x_val, y_test, y_val = model_selection.train_test_split(x_test, y_test, test_size=0.5, random_state=40)
     
     model = model_type(random_state = 42)
     
@@ -317,17 +317,15 @@ def save_model(model,performance_metrics,hyperparameter_combination,folder):
     hyperparameter_json = os.path.join(save_dir,"hyperparameters.json")
     performance_metrics_json = os.path.join(save_dir,"metrics.json")
     
-    if os.path.exists(save_dir) == True:
-        shutil.rmtree(save_dir)
-        
-    os.makedirs(save_dir)
+    if os.path.exists(save_dir) == False:
+        os.mkdir(save_dir)
         
     joblib.dump(model,model_saved_path)
     
-    with open(hyperparameter_json,"w") as file:
+    with open(hyperparameter_json,"w+") as file:
         json.dump(hyperparameter_combination,file)
     
-    with open(performance_metrics_json,"w") as file:
+    with open(performance_metrics_json,"w+") as file:
         json.dump(performance_metrics,file)
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -368,9 +366,7 @@ if __name__ == "__main__":
     
     
     X, y_classification = load_airbnb(df,"Category")
-    
     best_clas_model, best_clas_model_hyperparameters, best_clas_model_performance_metrics = tune_classification_model_hyperparameters(LogisticRegression,X,y_classification,log_hyperparameters)
-    
     save_model(best_clas_model,best_clas_model_performance_metrics,best_clas_model_hyperparameters,"models/classification/logistic_regression")
     
     
