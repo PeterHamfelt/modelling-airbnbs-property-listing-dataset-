@@ -128,8 +128,8 @@ def tune_regression_model_hyperparameters(model_type,X,y,hyperparameter_dict:dic
         dict: A dictionary of the best combination of hyperparameters and its values
         np.float64: The best score achieved during grid search
     """
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size=0.3, random_state=40)
-    x_test, x_val, y_test, y_val = model_selection.train_test_split(x_test, y_test, test_size=0.5, random_state=40)
+    x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size=0.3, random_state=42)
+    x_test, x_val, y_test, y_val = model_selection.train_test_split(x_test, y_test, test_size=0.5, random_state=42)
     
     model = model_type(random_state = 42)
     
@@ -331,6 +331,9 @@ def save_model(model,performance_metrics,hyperparameter_combination,folder):
 script_dir = os.path.dirname(os.path.realpath(__file__))
 df = pd.read_csv(os.path.join(script_dir,"data/tabular_data/clean_tabular_data.csv"))
 # hyperparameters = {"learning_rate":["invscaling","adaptive"],"eta0":np.linspace(0.01,0.001,5)}
+sgd_hyperarameters = {"penalty": ["l1","l2","elasticnet"],
+                      "alpha": [0.01, 0.001, 0.0001]}
+
 gbr_hyperparameters = {"learning_rate": [0.1,0.01,0.001], 
                    "subsample": [1.0,0.1,0.01], 
                    "n_estimators":[10,50,100],
@@ -346,8 +349,8 @@ rf_hyperparameters = {"n_estimators":[10,50,100],
 
 log_hyperparameters = {"penalty":["l2","none"]}
 
-regression_model_list = [GradientBoostingRegressor, DecisionTreeRegressor, RandomForestRegressor]
-regression_hyperparameter_list = [gbr_hyperparameters, dt_hyperparameters,rf_hyperparameters]
+regression_model_list = [SGDRegressor,GradientBoostingRegressor, DecisionTreeRegressor, RandomForestRegressor]
+regression_hyperparameter_list = [sgd_hyperarameters, gbr_hyperparameters, dt_hyperparameters,rf_hyperparameters]
 
 classification_model_list = []
 classification_hyperparameter_list =[]
