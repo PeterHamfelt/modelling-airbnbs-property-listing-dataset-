@@ -12,8 +12,8 @@ from sklearn.metrics import mean_squared_error,r2_score, accuracy_score, f1_scor
 from tabular_data import load_airbnb
 from sklearn.preprocessing import normalize
 from sklearn.model_selection import GridSearchCV
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, RandomForestClassifier, GradientBoostingClassifier
 
 
 def plot_prediction(y_pred,y_true):
@@ -202,7 +202,9 @@ def tune_classification_model_hyperparameters(model_type,X,y,hyperparameter_dict
     
     performance_metrics = {"Model Accuracy":model_accuracy,"Model F1 Score":model_f1}
     
-    return gs.best_estimator_, gs.best_params_, performance_metrics
+    print(val_acc, val_f1)
+    
+    return gs.best_estimator_, performance_metrics, gs.best_params_, gs.best_score_
     
         
 def evaluate_all_models(model_list,X,y,hyperparameter_list,reg_or_class):
@@ -223,12 +225,14 @@ def evaluate_all_models(model_list,X,y,hyperparameter_list,reg_or_class):
     
     if reg_or_class.lower() == "reg":
         save_upper_path = "models/regression"
+        hyperparameter_tuner = tune_regression_model_hyperparameters
     elif reg_or_class.lower() == "class":
         save_upper_path = "models/classification"
+        hyperparameter_tuner = tune_classification_model_hyperparameters
     
     for model_type, hyperparameter_dict in zip(model_list,hyperparameter_list):
         
-        model, performance_metrics, model_params, model_best_score = tune_regression_model_hyperparameters(model_type,X,y,hyperparameter_dict)
+        model, performance_metrics, model_params, model_best_score = hyperparameter_tuner(model_type,X,y,hyperparameter_dict)
         
         save_path = "{}/{}".format(save_upper_path ,type(model).__name__)
         full_save_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),save_path)
@@ -335,36 +339,44 @@ df = pd.read_csv(os.path.join(script_dir,"data/tabular_data/clean_tabular_data.c
 sgd_hyperarameters = {"penalty": ["l1","l2","elasticnet"],
                       "alpha": [0.01, 0.001, 0.0001]}
 
-gbr_hyperparameters = {"learning_rate": [0.1,0.01,0.001], 
+gbr_regression_hyperparameters = {"learning_rate": [0.1,0.01,0.001], 
                    "subsample": [1.0,0.1,0.01], 
                    "n_estimators":[10,50,100],
                    "max_depth": [4,6,8]}
 
-dt_hyperparameters = {"splitter": ["best","random"],
+dt_regression_hyperparameters = {"splitter": ["best","random"],
                       "max_depth": [4,6,8],
                       }
 
-rf_hyperparameters = {"n_estimators":[10,50,100],
+rf_regression_hyperparameters = {"n_estimators":[10,50,100],
                       "max_depth":[4,6,8],
                       }
 
 regression_model_list = [SGDRegressor,GradientBoostingRegressor, DecisionTreeRegressor, RandomForestRegressor]
-regression_hyperparameter_list = [sgd_hyperarameters, gbr_hyperparameters, dt_hyperparameters,rf_hyperparameters]
+regression_hyperparameter_list = [sgd_hyperarameters, gbr_regression_hyperparameters, dt_regression_hyperparameters,rf_regression_hyperparameters]
 
 # Classification model hyperparameter dictionaries
 log_hyperparameters = {"penalty":["l2","none"]}
 
-classification_model_list = []
-classification_hyperparameter_list =[]
+
+classification_model_list = [LogisticRegression]
+classification_hyperparameter_list =[log_hyperparameters]
 
 if __name__ == "__main__":
+    # Regression section
+    print("Regression Models")
+    reg_var = "reg"
     X,y_regression = load_airbnb(df,"Price_Night")
-    evaluate_all_models(regression_model_list,X,y_regression, regression_hyperparameter_list,"reg")
-    best_reg_model, best_reg_model_hyperparameters, best_reg_model_performance_metrics = find_best_model("reg")
+    evaluate_all_models(regression_model_list,X,y_regression, regression_hyperparameter_list,reg_var)
+    best_reg_model, best_reg_model_hyperparameters, best_reg_model_performance_metrics = find_best_model(reg_var)
     
+    print("\n")
     
+    # Classification section
+    print("Classification Models")
+    class_var = "class"
     X, y_classification = load_airbnb(df,"Category")
-    best_clas_model, best_clas_model_hyperparameters, best_clas_model_performance_metrics = tune_classification_model_hyperparameters(LogisticRegression,X,y_classification,log_hyperparameters)
-    save_model(best_clas_model,best_clas_model_performance_metrics,best_clas_model_hyperparameters,"models/classification/logistic_regression")
+    evaluate_all_models(classification_model_list,X,y_classification,classification_hyperparameter_list,class_var)
+    best_class_model, best_class_model_hyperparameters, best_class_model_performance_metrics = find_best_model(class_var)
     
     
