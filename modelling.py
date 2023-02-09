@@ -330,7 +330,8 @@ def save_model(model,performance_metrics,hyperparameter_combination,folder):
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 df = pd.read_csv(os.path.join(script_dir,"data/tabular_data/clean_tabular_data.csv"))
-# hyperparameters = {"learning_rate":["invscaling","adaptive"],"eta0":np.linspace(0.01,0.001,5)}
+
+# Regression model hyperparameter dictionaries
 sgd_hyperarameters = {"penalty": ["l1","l2","elasticnet"],
                       "alpha": [0.01, 0.001, 0.0001]}
 
@@ -347,20 +348,14 @@ rf_hyperparameters = {"n_estimators":[10,50,100],
                       "max_depth":[4,6,8],
                       }
 
-log_hyperparameters = {"penalty":["l2","none"]}
-
 regression_model_list = [SGDRegressor,GradientBoostingRegressor, DecisionTreeRegressor, RandomForestRegressor]
 regression_hyperparameter_list = [sgd_hyperarameters, gbr_hyperparameters, dt_hyperparameters,rf_hyperparameters]
 
+# Classification model hyperparameter dictionaries
+log_hyperparameters = {"penalty":["l2","none"]}
+
 classification_model_list = []
 classification_hyperparameter_list =[]
-
-# hyperparameters_combination = create_hyperparameter_grid(hyperparameters)
-# best_model = custom_tune_regression_model_hyperparameters(SGDRegressor,X,y,hyperparameters_combination)
-
-# best_model, performance_metrics ,best_hyperparameter_combination, best_RMSE = tune_regression_model_hyperparameters(SGDRegressor,hyperparameters)
-# save_model_folder = "models/regression/linear_regression"
-# save_model(best_model,performance_metrics,best_hyperparameter_combination,save_model_folder)
 
 if __name__ == "__main__":
     X,y_regression = load_airbnb(df,"Price_Night")
