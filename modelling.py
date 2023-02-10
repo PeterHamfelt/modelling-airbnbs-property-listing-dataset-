@@ -173,7 +173,7 @@ def tune_classification_model_hyperparameters(model_type,X,y,hyperparameter_dict
     x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size=0.3, random_state=42)
     x_test, x_val, y_test, y_val = model_selection.train_test_split(x_test,y_test, test_size=0.5, random_state=42)
     
-    model = model_type(random_state= 42, max_iter = 10000)
+    model = model_type(random_state= 42)
     
     gs = GridSearchCV(model,
                       hyperparameter_dict)
@@ -352,15 +352,52 @@ rf_regression_hyperparameters = {"n_estimators":[10,50,100],
                       "max_depth":[4,6,8],
                       }
 
-regression_model_list = [SGDRegressor,GradientBoostingRegressor, DecisionTreeRegressor, RandomForestRegressor]
-regression_hyperparameter_list = [sgd_hyperarameters, gbr_regression_hyperparameters, dt_regression_hyperparameters,rf_regression_hyperparameters]
+regression_model_list = [SGDRegressor,
+                         GradientBoostingRegressor, 
+                         DecisionTreeRegressor, 
+                         RandomForestRegressor
+                         ]
+regression_hyperparameter_list = [sgd_hyperarameters, 
+                                  gbr_regression_hyperparameters, 
+                                  dt_regression_hyperparameters,
+                                  rf_regression_hyperparameters
+                                  ]
 
 # Classification model hyperparameter dictionaries
-log_hyperparameters = {"penalty":["l2","none"]}
+log_hyperparameters = {"penalty":["l2","none"],
+                       "solver":["lbfgs","newton-cg","sag","saga"]}
 
+dt_classification_hyperparameters = {"splitter":["best","random"],
+                                     "min_samples_split":[2,10,50,100],
+                                     "max_depth":[2,4,7,10],
+                                     "min_samples_leaf":[2,10,50,100],
+                                     "max_features":[None,"auto","sqrt","log2"]
+                                     }
 
-classification_model_list = [LogisticRegression]
-classification_hyperparameter_list =[log_hyperparameters]
+rf_classification_hyperparameters = {"n_estimators":[10,50,100],
+                                     "max_depth":[2,4,7,10],
+                                     "min_samples_split":[2,10,50,100],
+                                     "min_samples_leaf":[2,10,50,100],
+                                     "max_features":[None,"auto","sqrt","log2"]
+                                     }
+
+gbr_classification_hyperparameters = {"learning_rate": [0.1, 0.01, 0.001, 0.0001],
+                                      "n_estimators": [10,50,75,100],
+                                      "min_samples_leaf": [2,10,50,100],
+                                      "max_depth": [2,4,7,10],
+                                      "max_features": [None,"auto","sqrt","log2"]}
+
+classification_model_list = [LogisticRegression, 
+                             DecisionTreeClassifier, 
+                             RandomForestClassifier,
+                             GradientBoostingClassifier
+                             ]
+
+classification_hyperparameter_list =[log_hyperparameters, 
+                                     dt_classification_hyperparameters, 
+                                     rf_classification_hyperparameters,
+                                     gbr_classification_hyperparameters
+                                     ]
 
 if __name__ == "__main__":
     # Regression section
@@ -376,7 +413,11 @@ if __name__ == "__main__":
     print("Classification Models")
     class_var = "class"
     X, y_classification = load_airbnb(df,"Category")
-    evaluate_all_models(classification_model_list,X,y_classification,classification_hyperparameter_list,class_var)
+    #evaluate_all_models(classification_model_list,X,y_classification,classification_hyperparameter_list,class_var)
     best_class_model, best_class_model_hyperparameters, best_class_model_performance_metrics = find_best_model(class_var)
     
+    print("The best regression model type is {} with the following hyperparameters {} and the model's performance metrics are {}".format(type(best_reg_model).__name__, best_reg_model_hyperparameters, best_reg_model_performance_metrics))
     
+    print("\n")
+    
+    print("The best classification model type is {} with the following hyperparameters {} and the model's performance metrics are {}".format(type(best_class_model).__name__, best_class_model_hyperparameters, best_class_model_performance_metrics))

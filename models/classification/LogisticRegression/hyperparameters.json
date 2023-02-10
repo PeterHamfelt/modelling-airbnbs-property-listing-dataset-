@@ -1,1 +1,1 @@
-{"penalty": "none"}
+{"penalty": "none", "solver": "newton-cg"}
