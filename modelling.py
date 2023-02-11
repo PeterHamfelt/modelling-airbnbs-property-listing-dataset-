@@ -413,7 +413,7 @@ if __name__ == "__main__":
     print("Classification Models")
     class_var = "class"
     X, y_classification = load_airbnb(df,"Category")
-    #evaluate_all_models(classification_model_list,X,y_classification,classification_hyperparameter_list,class_var)
+    evaluate_all_models(classification_model_list,X,y_classification,classification_hyperparameter_list,class_var)
     best_class_model, best_class_model_hyperparameters, best_class_model_performance_metrics = find_best_model(class_var)
     
     print("The best regression model type is {} with the following hyperparameters {} and the model's performance metrics are {}".format(type(best_reg_model).__name__, best_reg_model_hyperparameters, best_reg_model_performance_metrics))
