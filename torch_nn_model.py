@@ -61,21 +61,21 @@ def training(model,train_loader,n_epochs=10):
             # Reset the gradient before computing the next loss fir every req_grad = True parameters. 
             optimizer.zero_grad()
             
-working_dir = os.path.dirname(os.path.realpath(__file__))
-os.chdir(working_dir)
 
-data = AirbnbNightlyPriceImageDataset()
+if __name__ == "__main__":
+    working_dir = os.path.dirname(os.path.realpath(__file__))
+    os.chdir(working_dir)
+    data = AirbnbNightlyPriceImageDataset()
+    train_loader = torch.utils.data.DataLoader(data, batch_size = 32, shuffle = True)
 
-train_loader = torch.utils.data.DataLoader(data, batch_size = 32, shuffle = True)
+    for batch in train_loader:
+        feature_cols , label_cols = batch
+        print(feature_cols,label_cols)
+    
+    features = feature_cols.to(torch.float32)
+    labels = label_cols.to(torch.float32)
+    input_shape = len((feature_cols[1]))
+    output_shape = 1  
+    model = LinearRegression(input_size = input_shape,output_size = output_shape)
 
-for batch in train_loader:
-    feature_cols , label_cols = batch
-    print(feature_cols,label_cols)
-   
-features = feature_cols.to(torch.float32)
-labels = label_cols.to(torch.float32)
-input_shape = len((feature_cols[1]))
-output_shape = 1  
-model = LinearRegression(input_size = input_shape,output_size = output_shape)
-
-training(model,train_loader,10)
+    training(model,train_loader,10)
