@@ -5,6 +5,7 @@ import numpy as np
 from tabular_data import load_airbnb
 
 class AirbnbNightlyPriceImageDataset(torch.utils.data.Dataset):
+    
     def __init__(self):
         super().__init__()
         clean_data_df = pd.read_csv(os.path.join(os.path.dirname(os.path.realpath(__file__)),"data/tabular_data/clean_tabular_data.csv"))
@@ -22,6 +23,34 @@ class AirbnbNightlyPriceImageDataset(torch.utils.data.Dataset):
     def __len__(self):
         
         return len(self.y)
+    
+class LinearRegression(torch.nn.Module):
+    
+    def __init__(self,input_size,output_size):
+        super().__init__()
+        self.linear = torch.nn.Linear(input_size,output_size)
+        
+    def forward(self,features):
+        prediction = self.linear(features)
+        return prediction
+    
+def training(model,train_loader,n_epochs=10):
+    
+    for epochs in range(n_epochs):
+        
+        for batch in train_loader:
+            feature, label = batch
+            feature = feature.to(torch.float32)
+            label = label.to(torch.float32)
+            
+            prediction = model(feature)
+            
+            loss = torch.nn.functional.mse_loss(prediction,label)
+            
+            # Backpropagate the loss into hidden layers
+            loss.backward()
+            
+            print(loss)
 
 data = AirbnbNightlyPriceImageDataset()
 
@@ -30,3 +59,11 @@ train_loader = torch.utils.data.DataLoader(data, batch_size = 32, shuffle = True
 for batch in train_loader:
     feature_cols , label_cols = batch
     print(feature_cols,label_cols)
+   
+features = feature_cols.to(torch.float32)
+labels = label_cols.to(torch.float32)
+input_shape = len((feature_cols[1]))
+output_shape = 1  
+model = LinearRegression(input_size = input_shape,output_size = output_shape)
+
+training(model,train_loader,10)
