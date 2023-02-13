@@ -2,7 +2,9 @@ import os
 import torch 
 import pandas as pd
 import numpy as np
+from sklearn.preprocessing import normalize
 from tabular_data import load_airbnb
+from torch.utils.tensorboard import SummaryWriter
 
 class AirbnbNightlyPriceImageDataset(torch.utils.data.Dataset):
     
@@ -11,7 +13,7 @@ class AirbnbNightlyPriceImageDataset(torch.utils.data.Dataset):
         clean_data_df = pd.read_csv(os.path.join(os.path.dirname(os.path.realpath(__file__)),"data/tabular_data/clean_tabular_data.csv"))
         load_df = load_airbnb(clean_data_df,"Price_Night")
         self.data = pd.concat([load_df[0],load_df[1]], axis = 1)
-        self.x = load_df[0]
+        self.x = pd.DataFrame(normalize(load_df[0]))
         self.y = load_df[1]
         
     def __getitem__(self,index):
@@ -36,21 +38,31 @@ class LinearRegression(torch.nn.Module):
     
 def training(model,train_loader,n_epochs=10):
     
+    writer = SummaryWriter()
+    
+    optimizer  = torch.optim.SGD(model.parameters(), lr = 0.001)
+    
     for epochs in range(n_epochs):
         
         for batch in train_loader:
             feature, label = batch
             feature = feature.to(torch.float32)
             label = label.to(torch.float32)
-            
             prediction = model(feature)
-            
             loss = torch.nn.functional.mse_loss(prediction,label)
             
             # Backpropagate the loss into hidden layers
             loss.backward()
-            
             print(loss)
+            optimizer.step()
+            
+            writer.add_scalar("loss",loss.item(),epochs)
+            
+            # Reset the gradient before computing the next loss fir every req_grad = True parameters. 
+            optimizer.zero_grad()
+            
+working_dir = os.path.dirname(os.path.realpath(__file__))
+os.chdir(working_dir)
 
 data = AirbnbNightlyPriceImageDataset()
 
