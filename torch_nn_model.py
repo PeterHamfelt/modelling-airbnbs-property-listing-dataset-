@@ -30,7 +30,22 @@ class LinearRegression(torch.nn.Module):
     
     def __init__(self,input_size,output_size):
         super().__init__()
-        self.linear = torch.nn.Linear(input_size,output_size)
+        # Number of nodes in respective hidden layers
+        hidden_layer_1 = 16
+        hidden_layer_2 = 10
+        # Initialise neural network layers
+        self.linear = torch.nn.Sequential(
+            # Input Layer to hidden layer 1
+            torch.nn.Linear(input_size,hidden_layer_1),
+            # Hidden layer 1 activation function
+            torch.nn.ReLU(),
+            # Hidden layer 1 to hidden layer 2
+            torch.nn.Linear(hidden_layer_1,hidden_layer_2),
+            # Hidden layer 2 activation function
+            torch.nn.ReLU(),
+            # Hidden layer 2 to output layer
+            torch.nn.Linear(hidden_layer_2,output_size)
+        )
         
     def forward(self,features):
         prediction = self.linear(features)
