@@ -6,6 +6,7 @@ from sklearn.preprocessing import normalize
 from tabular_data import load_airbnb
 from torch.utils.tensorboard import SummaryWriter
 
+
 class AirbnbNightlyPriceImageDataset(torch.utils.data.Dataset):
     
     def __init__(self):
@@ -25,6 +26,22 @@ class AirbnbNightlyPriceImageDataset(torch.utils.data.Dataset):
     def __len__(self):
         
         return len(self.y)
+    
+    def train_val_sampler(self):
+        validation_size = 0.2
+        np.random.seed(42)
+        dataset_size = len(self.y)
+        sample_indices = list(range(dataset_size))
+        split_loc = int(np.floor(dataset_size*validation_size))
+        np.random.shuffle(sample_indices)
+        
+        print(split_loc)
+        training_sample_indices , validation_sample_indices = sample_indices[:split_loc], sample_indices[split_loc:]
+        
+        training_sampler = torch.utils.data.SubsetRandomSampler(training_sample_indices)
+        validation_sampler = torch.utils.data.SubsetRandomSampler(validation_sample_indices)
+        
+        return training_sampler, validation_sampler
     
 class LinearRegression(torch.nn.Module):
     
@@ -81,7 +98,10 @@ if __name__ == "__main__":
     working_dir = os.path.dirname(os.path.realpath(__file__))
     os.chdir(working_dir)
     data = AirbnbNightlyPriceImageDataset()
-    train_loader = torch.utils.data.DataLoader(data, batch_size = 32, shuffle = True)
+    train_sampler, validation_sampler = data.train_val_sampler()
+
+    train_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = train_sampler)
+    validation_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = validation_sampler)
 
     for batch in train_loader:
         feature_cols , label_cols = batch
