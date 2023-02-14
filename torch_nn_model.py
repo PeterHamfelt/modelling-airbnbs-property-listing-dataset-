@@ -68,7 +68,7 @@ class LinearRegression(torch.nn.Module):
         prediction = self.linear(features)
         return prediction
     
-def training(model,train_loader,n_epochs=10):
+def training(model,train_loader,validation_loader,n_epochs=10):
     
     writer = SummaryWriter()
     
@@ -76,19 +76,27 @@ def training(model,train_loader,n_epochs=10):
     
     for epochs in range(n_epochs):
         
-        for batch in train_loader:
-            feature, label = batch
-            feature = feature.to(torch.float32)
-            label = label.to(torch.float32)
-            prediction = model(feature)
-            loss = torch.nn.functional.mse_loss(prediction,label)
+        for train_batch, val_batch in zip(train_loader, validation_loader):
             
-            # Backpropagate the loss into hidden layers
-            loss.backward()
-            print(loss)
+            train_feature, train_label = train_batch
+            val_feature, val_label = val_batch
+            
+            train_feature, val_feature = train_feature.to(torch.float32), val_feature.to(torch.float32)
+            train_label, val_label = train_label.to(torch.float32), val_label.to(torch.float32)
+            
+            train_prediction = model(train_feature)
+            validation_prediciton = model(val_feature)
+            
+            train_loss = torch.nn.functional.mse_loss(train_prediction,train_label)
+            validation_loss = torch.nn.functional.mse_loss(validation_prediciton,val_label)
+            
+            # Backpropagate the train_loss into hidden layers
+            train_loss.backward()
+            print(train_loss, validation_loss)
             optimizer.step()
             
-            writer.add_scalar("loss",loss.item(),epochs)
+            writer.add_scalar("Training loss",train_loss.item(),epochs)
+            writer.add_scalar("Validation loss", validation_loss.item(),epochs)
             
             # Reset the gradient before computing the next loss fir every req_grad = True parameters. 
             optimizer.zero_grad()
@@ -113,4 +121,4 @@ if __name__ == "__main__":
     output_shape = 1  
     model = LinearRegression(input_size = input_shape,output_size = output_shape)
 
-    training(model,train_loader,10)
+    training(model,train_loader,validation_loader,10)
