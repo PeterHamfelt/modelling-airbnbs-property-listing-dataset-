@@ -2,6 +2,7 @@ import os
 import torch 
 import pandas as pd
 import numpy as np
+import yaml
 from sklearn.preprocessing import normalize
 from tabular_data import load_airbnb
 from torch.utils.tensorboard import SummaryWriter
@@ -11,7 +12,7 @@ class AirbnbNightlyPriceImageDataset(torch.utils.data.Dataset):
     
     def __init__(self):
         super().__init__()
-        clean_data_df = pd.read_csv(os.path.join(os.path.dirname(os.path.realpath(__file__)),"data/tabular_data/clean_tabular_data.csv"))
+        clean_data_df = pd.read_csv(os.path.join(working_dir,"data/tabular_data/clean_tabular_data.csv"))
         load_df = load_airbnb(clean_data_df,"Price_Night")
         self.data = pd.concat([load_df[0],load_df[1]], axis = 1)
         self.x = pd.DataFrame(normalize(load_df[0]))
@@ -45,24 +46,24 @@ class AirbnbNightlyPriceImageDataset(torch.utils.data.Dataset):
     
 class LinearRegression(torch.nn.Module):
     
-    def __init__(self,input_size,output_size):
+    def __init__(self,data,nn_config):
         super().__init__()
-        # Number of nodes in respective hidden layers
-        hidden_layer_1 = 16
-        hidden_layer_2 = 10
-        # Initialise neural network layers
-        self.linear = torch.nn.Sequential(
-            # Input Layer to hidden layer 1
-            torch.nn.Linear(input_size,hidden_layer_1),
-            # Hidden layer 1 activation function
-            torch.nn.ReLU(),
-            # Hidden layer 1 to hidden layer 2
-            torch.nn.Linear(hidden_layer_1,hidden_layer_2),
-            # Hidden layer 2 activation function
-            torch.nn.ReLU(),
-            # Hidden layer 2 to output layer
-            torch.nn.Linear(hidden_layer_2,output_size)
-        )
+        n_input = data.x.shape[1]
+        n_output = data.y.ndim
+        layers = []
+        n_hidden_layers = nn_config["depth"] + 2
+        n_neurons = nn_config["hidden_layer_width"]
+        for hidden_layer in range(n_hidden_layers):
+            if hidden_layer == 0: # Input layer
+                layers.append(torch.nn.Linear(n_input,n_neurons))
+            elif hidden_layer == range(n_hidden_layers)[-1]: # Output layer
+                layers.append(torch.nn.ReLU())
+                layers.append(torch.nn.Linear(n_neurons,n_output))
+            else: # Hidden Layers
+                layers.append(torch.nn.ReLU())
+                layers.append(torch.nn.Linear(n_neurons,n_neurons))
+                
+        self.linear = torch.nn.Sequential(*layers)
         
     def forward(self,features):
         prediction = self.linear(features)
@@ -101,24 +102,37 @@ def training(model,train_loader,validation_loader,n_epochs=10):
             # Reset the gradient before computing the next loss fir every req_grad = True parameters. 
             optimizer.zero_grad()
             
+def get_nn_config():
+    """ Get Neural Network Configuration
+
+    This function loads in the configuration of the neural network from nn_config.yaml file and returns a dictionary of 
+    the parameters and values in a dictionary.
+
+    Returns:
+        dict: Neural netowkr's hyperparameters and the value associated with each hyperparameters. 
+    """
+    
+    nn_yaml_file = os.path.join(working_dir,"nn_config.yaml")
+    
+    with open(nn_yaml_file,"r") as yaml_file:
+        nn_config_dict = yaml.safe_load(yaml_file)
+        
+    return nn_config_dict
+
+global working_dir
+
+working_dir = os.path.dirname(os.path.realpath(__file__))
 
 if __name__ == "__main__":
-    working_dir = os.path.dirname(os.path.realpath(__file__))
     os.chdir(working_dir)
     data = AirbnbNightlyPriceImageDataset()
     train_sampler, validation_sampler = data.train_val_sampler()
 
     train_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = train_sampler)
     validation_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = validation_sampler)
-
-    for batch in train_loader:
-        feature_cols , label_cols = batch
-        print(feature_cols,label_cols)
     
-    features = feature_cols.to(torch.float32)
-    labels = label_cols.to(torch.float32)
-    input_shape = len((feature_cols[1]))
-    output_shape = 1  
-    model = LinearRegression(input_size = input_shape,output_size = output_shape)
+    nn_config = get_nn_config()
+
+    model = LinearRegression(data,nn_config)
 
     training(model,train_loader,validation_loader,10)
