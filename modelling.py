@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import joblib
 import json
 import shutil
+import glob
+import yaml
 from sklearn import model_selection
 from sklearn.linear_model import SGDRegressor, LogisticRegression
 from sklearn.metrics import mean_squared_error,r2_score, accuracy_score, f1_score, precision_score, recall_score, confusion_matrix, ConfusionMatrixDisplay
@@ -235,7 +237,7 @@ def evaluate_all_models(model_list,X,y,hyperparameter_list,reg_or_class):
         model, performance_metrics, model_params, model_best_score = hyperparameter_tuner(model_type,X,y,hyperparameter_dict)
         
         save_path = "{}/{}".format(save_upper_path ,type(model).__name__)
-        full_save_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),save_path)
+        full_save_path = os.path.join(working_dir,save_path)
         
         save_model(model,performance_metrics,model_params,full_save_path)
         
@@ -261,7 +263,7 @@ def find_best_model(reg_or_class:str):
     elif reg_or_class.lower() == "class":
         model_type = "classification"
         
-    model_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)),f"models/{model_type}")
+    model_folder = os.path.join(working_dir,f"models/{model_type}")
     different_models_folder = [folder[0] for folder in os.walk(model_folder)][1:]
     
     model_performance_metric_list = []
@@ -315,7 +317,6 @@ def save_model(model,performance_metrics,hyperparameter_combination,folder):
         hyperparameter_combination (dict): The combination of hyperparameter used to achieved the best performing model.
         folder (str): The folder directory.
     """
-    working_dir = os.path.dirname(os.path.realpath(__file__))
     save_dir = os.path.join(working_dir,folder)
     model_saved_path = os.path.join(save_dir,"model.joblib")
     hyperparameter_json = os.path.join(save_dir,"hyperparameters.json")
@@ -331,9 +332,20 @@ def save_model(model,performance_metrics,hyperparameter_combination,folder):
     
     with open(performance_metrics_json,"w+") as file:
         json.dump(performance_metrics,file)
+        
+def get_nn_config():
+    
+    nn_yaml_file = os.path.join(working_dir,"nn_config.yaml")
+    
+    with open(nn_yaml_file,"r") as yaml_file:
+        nn_config_dict = yaml.safe_load(yaml_file)
+        
+    return nn_config_dict
 
-script_dir = os.path.dirname(os.path.realpath(__file__))
-df = pd.read_csv(os.path.join(script_dir,"data/tabular_data/clean_tabular_data.csv"))
+global working_dir
+
+working_dir = os.path.dirname(os.path.realpath(__file__))
+df = pd.read_csv(os.path.join(working_dir,"data/tabular_data/clean_tabular_data.csv"))
 
 # Regression model hyperparameter dictionaries
 sgd_hyperarameters = {"penalty": ["l1","l2","elasticnet"],
@@ -402,22 +414,25 @@ classification_hyperparameter_list =[log_hyperparameters,
 if __name__ == "__main__":
     # Regression section
     print("Regression Models")
-    reg_var = "reg"
-    X,y_regression = load_airbnb(df,"Price_Night")
-    evaluate_all_models(regression_model_list,X,y_regression, regression_hyperparameter_list,reg_var)
-    best_reg_model, best_reg_model_hyperparameters, best_reg_model_performance_metrics = find_best_model(reg_var)
+    # reg_var = "reg"
+    # X,y_regression = load_airbnb(df,"Price_Night")
+    # evaluate_all_models(regression_model_list,X,y_regression, regression_hyperparameter_list,reg_var)
+    # best_reg_model, best_reg_model_hyperparameters, best_reg_model_performance_metrics = find_best_model(reg_var)
     
-    print("\n")
+    # print("\n")
     
-    # Classification section
-    print("Classification Models")
-    class_var = "class"
-    X, y_classification = load_airbnb(df,"Category")
-    evaluate_all_models(classification_model_list,X,y_classification,classification_hyperparameter_list,class_var)
-    best_class_model, best_class_model_hyperparameters, best_class_model_performance_metrics = find_best_model(class_var)
+    # # Classification section
+    # print("Classification Models")
+    # class_var = "class"
+    # X, y_classification = load_airbnb(df,"Category")
+    # evaluate_all_models(classification_model_list,X,y_classification,classification_hyperparameter_list,class_var)
+    # best_class_model, best_class_model_hyperparameters, best_class_model_performance_metrics = find_best_model(class_var)
     
-    print("The best regression model type is {} with the following hyperparameters {} and the model's performance metrics are {}".format(type(best_reg_model).__name__, best_reg_model_hyperparameters, best_reg_model_performance_metrics))
+    # print("The best regression model type is {} with the following hyperparameters {} and the model's performance metrics are {}".format(type(best_reg_model).__name__, best_reg_model_hyperparameters, best_reg_model_performance_metrics))
     
-    print("\n")
+    # print("\n")
     
-    print("The best classification model type is {} with the following hyperparameters {} and the model's performance metrics are {}".format(type(best_class_model).__name__, best_class_model_hyperparameters, best_class_model_performance_metrics))
+    # print("The best classification model type is {} with the following hyperparameters {} and the model's performance metrics are {}".format(type(best_class_model).__name__, best_class_model_hyperparameters, best_class_model_performance_metrics))
+    
+    nn_config_dict = get_nn_config()
+    print(nn_config_dict)
