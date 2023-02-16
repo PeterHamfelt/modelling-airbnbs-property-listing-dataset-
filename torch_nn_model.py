@@ -5,10 +5,11 @@ import numpy as np
 import yaml
 import joblib
 import datetime
+import time
 from sklearn.preprocessing import normalize
 from tabular_data import load_airbnb
 from torch.utils.tensorboard import SummaryWriter
-
+from sklearn.metrics import r2_score
 
 class AirbnbNightlyPriceImageDataset(torch.utils.data.Dataset):
     
@@ -30,7 +31,7 @@ class AirbnbNightlyPriceImageDataset(torch.utils.data.Dataset):
         
         return len(self.y)
     
-    def train_val_sampler(self):
+    def data_splitter(self):
         validation_size = 0.3
         test_size = 0.2
         np.random.seed(42)
@@ -54,7 +55,7 @@ class AirbnbNightlyPriceImageDataset(torch.utils.data.Dataset):
 class LinearRegression(torch.nn.Module):
     
     def __init__(self,data,nn_config):
-        super().__init__()
+        super(LinearRegression,self).__init__()
         n_input = data.x.shape[1]
         n_output = data.y.ndim
         layers = []
@@ -76,11 +77,20 @@ class LinearRegression(torch.nn.Module):
         prediction = self.linear(features)
         return prediction
     
-def training(model,train_loader,validation_loader,n_epochs=10):
+def training(model,train_loader,test_loader,validation_loader,n_epochs=10):
     
     writer = SummaryWriter()
     
     optimizer  = torch.optim.SGD(model.parameters(), lr = 0.001)
+    
+    min_validation_RMSE = np.inf
+    
+    performance_metrics = {"RMSE_Loss":{"Training":0,"Testing":0,"Validation":0},
+                           "R_squared":{"Training":0,"Testing":0,"Validation":0},
+                           "training_duration":0, 
+                           "inference_latency":0}
+    
+    start_time = time.time()
     
     for epochs in range(n_epochs):
         
@@ -95,12 +105,15 @@ def training(model,train_loader,validation_loader,n_epochs=10):
             train_prediction = model(train_feature)
             validation_prediciton = model(val_feature)
             
-            train_loss = torch.nn.functional.mse_loss(train_prediction,train_label)
-            validation_loss = torch.nn.functional.mse_loss(validation_prediciton,val_label)
+            train_loss = torch.nn.functional.mse_loss(train_prediction.squeeze(),train_label)
+            validation_loss = torch.nn.functional.mse_loss(validation_prediciton.squeeze(),val_label)
+            
+            train_R_squared = r2_score(train_label,train_prediction)
+            val_R_squared = r2_score(val_label,validation_prediciton)
             
             # Backpropagate the train_loss into hidden layers
             train_loss.backward()
-            print(train_loss, validation_loss)
+            
             optimizer.step()
             
             writer.add_scalar("Training loss",train_loss.item(),epochs)
@@ -108,6 +121,15 @@ def training(model,train_loader,validation_loader,n_epochs=10):
             
             # Reset the gradient before computing the next loss fir every req_grad = True parameters. 
             optimizer.zero_grad()
+            
+    end_time = time.time()
+    training_duration = end_time - start_time    
+    inference_latency = training_duration / (len(train_loader)*8)
+    
+    performance_metrics["RMSE_Loss"]["Training"] = train_loss
+    performance_metrics["RMSE_Loss"]["Validation"] = validation_loss
+    
+    
             
 def get_nn_config():
     """ Get Neural Network Configuration
@@ -136,6 +158,7 @@ def save_model(model):
             save_path = os.path.join(working_dir,f"models/regression/neural_networks/{model.__class__.__name__}_{current_time}")
             torch.save(model.state_dict(),os.path.join(save_path,"model.pt"))
             
+            
                    
     else:         
         
@@ -144,9 +167,20 @@ def save_model(model):
         if 'regressor' in model_name.lower():
             model
             
-        
+def train_and_save_nn():
     
+    data = AirbnbNightlyPriceImageDataset()
+    
+    train_sampler, testing_sampler, validation_sampler = data.data_splitter()
 
+    train_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = train_sampler)
+    test_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = testing_sampler)
+    validation_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = validation_sampler)
+    
+    nn_config = get_nn_config()
+     
+    model = LinearRegression(nn_config=nn_config)
+    
 global working_dir
 
 working_dir = os.path.dirname(os.path.realpath(__file__))
@@ -154,13 +188,16 @@ working_dir = os.path.dirname(os.path.realpath(__file__))
 if __name__ == "__main__":
     os.chdir(working_dir)
     data = AirbnbNightlyPriceImageDataset()
-    train_sampler, testing_sampler, validation_sampler = data.train_val_sampler()
-
+    
+    train_sampler, testing_sampler, validation_sampler = data.data_splitter()
     train_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = train_sampler)
+    test_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = testing_sampler)
     validation_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = validation_sampler)
     
     nn_config = get_nn_config()
 
     model = LinearRegression(data,nn_config)
+    
+    print(model)
 
-    # training(model,train_loader,validation_loader,10)
+    # training(model,train_loader,test_loader,validation_loader,25)
