@@ -3,6 +3,8 @@ import torch
 import pandas as pd
 import numpy as np
 import yaml
+import joblib
+import datetime
 from sklearn.preprocessing import normalize
 from tabular_data import load_airbnb
 from torch.utils.tensorboard import SummaryWriter
@@ -29,20 +31,25 @@ class AirbnbNightlyPriceImageDataset(torch.utils.data.Dataset):
         return len(self.y)
     
     def train_val_sampler(self):
-        validation_size = 0.2
+        validation_size = 0.3
+        test_size = 0.2
         np.random.seed(42)
         dataset_size = len(self.y)
-        sample_indices = list(range(dataset_size))
-        split_loc = int(np.floor(dataset_size*validation_size))
-        np.random.shuffle(sample_indices)
+        sample_indices_1 = list(range(dataset_size))
+        split_loc_1 = int(np.floor(dataset_size*(1-validation_size)))
+        np.random.shuffle(sample_indices_1)
         
-        print(split_loc)
-        training_sample_indices , validation_sample_indices = sample_indices[:split_loc], sample_indices[split_loc:]
+        training_sample_indices , validation_n_testing_indices = sample_indices_1[:split_loc_1], sample_indices_1[split_loc_1:]
+    
+        split_loc_2 = int(np.floor(len(validation_n_testing_indices)*(1-test_size)))
+        
+        validation_sample_indices,  testing_sample_indices = validation_n_testing_indices[:split_loc_2], validation_n_testing_indices[split_loc_2]
         
         training_sampler = torch.utils.data.SubsetRandomSampler(training_sample_indices)
+        testing_sampler = torch.utils.data.SubsetRandomSampler(testing_sample_indices)
         validation_sampler = torch.utils.data.SubsetRandomSampler(validation_sample_indices)
         
-        return training_sampler, validation_sampler
+        return training_sampler, testing_sampler, validation_sampler
     
 class LinearRegression(torch.nn.Module):
     
@@ -119,6 +126,27 @@ def get_nn_config():
         
     return nn_config_dict
 
+def save_model(model):
+    
+    current_time = datetime.datetime.now().replace(microsecond=0).isoformat()
+    
+    if isinstance(model,torch.nn.Module):
+        
+        if 'regression' in model.__class__.__name__.lower():
+            save_path = os.path.join(working_dir,f"models/regression/neural_networks/{model.__class__.__name__}_{current_time}")
+            torch.save(model.state_dict(),os.path.join(save_path,"model.pt"))
+            
+                   
+    else:         
+        
+        model_name = str(type(model())).split(".")[-1]
+        
+        if 'regressor' in model_name.lower():
+            model
+            
+        
+    
+
 global working_dir
 
 working_dir = os.path.dirname(os.path.realpath(__file__))
@@ -126,7 +154,7 @@ working_dir = os.path.dirname(os.path.realpath(__file__))
 if __name__ == "__main__":
     os.chdir(working_dir)
     data = AirbnbNightlyPriceImageDataset()
-    train_sampler, validation_sampler = data.train_val_sampler()
+    train_sampler, testing_sampler, validation_sampler = data.train_val_sampler()
 
     train_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = train_sampler)
     validation_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = validation_sampler)
@@ -135,4 +163,4 @@ if __name__ == "__main__":
 
     model = LinearRegression(data,nn_config)
 
-    training(model,train_loader,validation_loader,10)
+    # training(model,train_loader,validation_loader,10)

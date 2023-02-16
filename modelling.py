@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import joblib
 import json
 import shutil
-import glob
 import yaml
 import torch
 from sklearn import model_selection
@@ -422,25 +421,29 @@ classification_hyperparameter_list =[log_hyperparameters,
 
 if __name__ == "__main__":
     # Regression section
-    print("Regression Models")
-    reg_var = "reg"
-    X,y_regression = load_airbnb(df,"Price_Night")
-    evaluate_all_models(regression_model_list,X,y_regression, regression_hyperparameter_list,reg_var)
-    best_reg_model, best_reg_model_hyperparameters, best_reg_model_performance_metrics = find_best_model(reg_var)
+    model = SGDRegressor()
+    print(str(type(SGDRegressor())).split("."))
+    print(type(LogisticRegression()))
+    print(type(DecisionTreeClassifier()))
+    # print("Regression Models")
+    # reg_var = "reg"
+    # X,y_regression = load_airbnb(df,"Price_Night")
+    # evaluate_all_models(regression_model_list,X,y_regression, regression_hyperparameter_list,reg_var)
+    # best_reg_model, best_reg_model_hyperparameters, best_reg_model_performance_metrics = find_best_model(reg_var)
     
-    print("\n")
+    # print("\n")
     
-    # Classification section
-    print("Classification Models")
-    class_var = "class"
-    X, y_classification = load_airbnb(df,"Category")
-    evaluate_all_models(classification_model_list,X,y_classification,classification_hyperparameter_list,class_var)
-    best_class_model, best_class_model_hyperparameters, best_class_model_performance_metrics = find_best_model(class_var)
+    # # Classification section
+    # print("Classification Models")
+    # class_var = "class"
+    # X, y_classification = load_airbnb(df,"Category")
+    # evaluate_all_models(classification_model_list,X,y_classification,classification_hyperparameter_list,class_var)
+    # best_class_model, best_class_model_hyperparameters, best_class_model_performance_metrics = find_best_model(class_var)
     
-    print("The best regression model type is {} with the following hyperparameters {} and the model's performance metrics are {}".format(type(best_reg_model).__name__, best_reg_model_hyperparameters, best_reg_model_performance_metrics))
+    # print("The best regression model type is {} with the following hyperparameters {} and the model's performance metrics are {}".format(type(best_reg_model).__name__, best_reg_model_hyperparameters, best_reg_model_performance_metrics))
     
-    print("\n")
+    # print("\n")
     
-    print("The best classification model type is {} with the following hyperparameters {} and the model's performance metrics are {}".format(type(best_class_model).__name__, best_class_model_hyperparameters, best_class_model_performance_metrics))
+    # print("The best classification model type is {} with the following hyperparameters {} and the model's performance metrics are {}".format(type(best_class_model).__name__, best_class_model_hyperparameters, best_class_model_performance_metrics))
     
-    nn_config_dict = get_nn_config()
+    # nn_config_dict = get_nn_config()
