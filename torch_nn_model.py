@@ -3,7 +3,6 @@ import torch
 import pandas as pd
 import numpy as np
 import yaml
-import joblib
 import datetime
 import time
 from sklearn.preprocessing import normalize
@@ -44,7 +43,7 @@ class AirbnbNightlyPriceImageDataset(torch.utils.data.Dataset):
     
         split_loc_2 = int(np.floor(len(validation_n_testing_indices)*(1-test_size)))
         
-        validation_sample_indices,  testing_sample_indices = validation_n_testing_indices[:split_loc_2], validation_n_testing_indices[split_loc_2]
+        validation_sample_indices,  testing_sample_indices = validation_n_testing_indices[:split_loc_2], validation_n_testing_indices[split_loc_2:]
         
         training_sampler = torch.utils.data.SubsetRandomSampler(training_sample_indices)
         testing_sampler = torch.utils.data.SubsetRandomSampler(testing_sample_indices)
@@ -83,53 +82,84 @@ def training(model,train_loader,test_loader,validation_loader,n_epochs=10):
     
     optimizer  = torch.optim.SGD(model.parameters(), lr = 0.001)
     
-    min_validation_RMSE = np.inf
+    total_loss = 0
+    total_r_square = 0
     
-    performance_metrics = {"RMSE_Loss":{"Training":0,"Testing":0,"Validation":0},
-                           "R_squared":{"Training":0,"Testing":0,"Validation":0},
-                           "training_duration":0, 
-                           "inference_latency":0}
+    performance_metrics = {"RMSE_loss":{}, "R_squared":{}}
     
     start_time = time.time()
     
     for epochs in range(n_epochs):
         
-        for train_batch, val_batch in zip(train_loader, validation_loader):
+        for train_batch in train_loader:
             
-            train_feature, train_label = train_batch
-            val_feature, val_label = val_batch
+            feature, label = train_batch
             
-            train_feature, val_feature = train_feature.to(torch.float32), val_feature.to(torch.float32)
-            train_label, val_label = train_label.to(torch.float32), val_label.to(torch.float32)
+            feature, label = feature.to(torch.float32), label.to(torch.float32)
             
-            train_prediction = model(train_feature)
-            validation_prediciton = model(val_feature)
+            train_prediction = model(feature)
             
-            train_loss = torch.nn.functional.mse_loss(train_prediction.squeeze(),train_label)
-            validation_loss = torch.nn.functional.mse_loss(validation_prediciton.squeeze(),val_label)
-            
-            train_R_squared = r2_score(train_label,train_prediction)
-            val_R_squared = r2_score(val_label,validation_prediciton)
+            loss= torch.nn.functional.mse_loss(train_prediction.squeeze(),label)
+            total_loss += loss.item()
+
+            r_squared = r2_score(label,train_prediction.detach().numpy())
+            total_r_square += r_squared
             
             # Backpropagate the train_loss into hidden layers
-            train_loss.backward()
+            loss.backward()
             
             optimizer.step()
-            
-            writer.add_scalar("Training loss",train_loss.item(),epochs)
-            writer.add_scalar("Validation loss", validation_loss.item(),epochs)
             
             # Reset the gradient before computing the next loss fir every req_grad = True parameters. 
             optimizer.zero_grad()
             
+        avg_training_loss = np.mean(total_loss)
+        training_RMSE = np.sqrt(avg_training_loss)
+        print(training_RMSE)
+        avg_training_r_squared = np.mean(r_squared)
+        print(avg_training_r_squared)
+        writer.add_scalar("Average Training Loss",training_RMSE,epochs)
+        writer.add_scalar("Aveage R Squared",avg_training_r_squared,epochs)
+        
+        testing_RMSE, avg_testing_r_squared = eval_model(model, test_loader)
+        validation_RMSE, avg_validation_r_squared = eval_model(model, validation_loader)
+        
+            
     end_time = time.time()
     training_duration = end_time - start_time    
-    inference_latency = training_duration / (len(train_loader)*8)
+    inference_latency = training_duration / ((len(train_loader)*8)*n_epochs)
+    losses = [training_RMSE, testing_RMSE, validation_RMSE]
+    r_squared_scores = [avg_training_r_squared, avg_testing_r_squared, avg_validation_r_squared]
+    modes = ["Training","Testing","Validation"]
     
-    performance_metrics["RMSE_Loss"]["Training"] = train_loss
-    performance_metrics["RMSE_Loss"]["Validation"] = validation_loss
+    for mode, loss_value, r_score in zip(modes,losses,r_squared_scores):
+        performance_metrics["RMSE_loss"][mode] = loss_value
+        performance_metrics["R_squared"][mode] = r_score
+        
+    performance_metrics["training_duration"] = round(end_time - start_time,3)
+    performance_metrics["inference_latency"] = inference_latency
     
+    print(performance_metrics)
     
+def eval_model(model,dataloader):
+    loss = 0 
+    r_squared = 0
+    
+    for batch in dataloader:
+        feature, label = batch
+        feature, label = feature.to(torch.float32), label.to(torch.float32)
+        
+        y_pred = model(feature)
+        
+        loss += torch.nn.functional.mse_loss(y_pred.squeeze(),label).item()
+        r_squared += r2_score(label,y_pred.detach().numpy())
+        
+    avg_loss = np.mean(loss)
+    avg_r2 = np.mean(r_squared)
+    RMSE = np.sqrt(avg_loss)
+    
+    return RMSE, avg_r2
+
             
 def get_nn_config():
     """ Get Neural Network Configuration
@@ -157,29 +187,13 @@ def save_model(model):
         if 'regression' in model.__class__.__name__.lower():
             save_path = os.path.join(working_dir,f"models/regression/neural_networks/{model.__class__.__name__}_{current_time}")
             torch.save(model.state_dict(),os.path.join(save_path,"model.pt"))
-            
-            
-                   
+
     else:         
         
         model_name = str(type(model())).split(".")[-1]
         
         if 'regressor' in model_name.lower():
             model
-            
-def train_and_save_nn():
-    
-    data = AirbnbNightlyPriceImageDataset()
-    
-    train_sampler, testing_sampler, validation_sampler = data.data_splitter()
-
-    train_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = train_sampler)
-    test_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = testing_sampler)
-    validation_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = validation_sampler)
-    
-    nn_config = get_nn_config()
-     
-    model = LinearRegression(nn_config=nn_config)
     
 global working_dir
 
@@ -200,4 +214,4 @@ if __name__ == "__main__":
     
     print(model)
 
-    # training(model,train_loader,test_loader,validation_loader,25)
+    training(model,train_loader,test_loader,validation_loader,25)
