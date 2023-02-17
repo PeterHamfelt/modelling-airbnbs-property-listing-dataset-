@@ -5,6 +5,7 @@ import numpy as np
 import yaml
 import datetime
 import time
+import json
 from sklearn.preprocessing import normalize
 from tabular_data import load_airbnb
 from torch.utils.tensorboard import SummaryWriter
@@ -141,6 +142,8 @@ def training(model,train_loader,test_loader,validation_loader,n_epochs=10):
     
     print(performance_metrics)
     
+    return model, performance_metrics
+    
 def eval_model(model,dataloader):
     loss = 0 
     r_squared = 0
@@ -159,8 +162,7 @@ def eval_model(model,dataloader):
     RMSE = np.sqrt(avg_loss)
     
     return RMSE, avg_r2
-
-            
+          
 def get_nn_config():
     """ Get Neural Network Configuration
 
@@ -178,15 +180,25 @@ def get_nn_config():
         
     return nn_config_dict
 
-def save_model(model):
+def save_model(model,nn_config,metrics_dict):
     
-    current_time = datetime.datetime.now().replace(microsecond=0).isoformat()
+    current_time = datetime.datetime.now().replace(microsecond=0).isoformat().replace(":","-")
     
     if isinstance(model,torch.nn.Module):
         
         if 'regression' in model.__class__.__name__.lower():
-            save_path = os.path.join(working_dir,f"models/regression/neural_networks/{model.__class__.__name__}_{current_time}")
+            save_path = os.path.join(working_dir,"models","regression","neural_networks",f"{model.__class__.__name__} ({current_time})")
+            
+            if os.path.exists(save_path) == False:
+                os.makedirs(save_path)
+                
             torch.save(model.state_dict(),os.path.join(save_path,"model.pt"))
+            
+            with open(os.path.join(save_path,"performance_metrics.json"),"w+") as f:
+                json.dump(metrics_dict,f)
+                
+            with open(os.path.join(save_path,"hyperparanmeter.json"),"w+") as f:
+                json.dump(nn_config,f)    
 
     else:         
         
@@ -195,13 +207,7 @@ def save_model(model):
         if 'regressor' in model_name.lower():
             model
     
-global working_dir
-
-working_dir = os.path.dirname(os.path.realpath(__file__))
-
-if __name__ == "__main__":
-    os.chdir(working_dir)
-    data = AirbnbNightlyPriceImageDataset()
+def find_best_nn(data):
     
     train_sampler, testing_sampler, validation_sampler = data.data_splitter()
     train_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = train_sampler)
@@ -212,6 +218,18 @@ if __name__ == "__main__":
 
     model = LinearRegression(data,nn_config)
     
-    print(model)
+    model,performance_metrics = training(model,train_loader,test_loader,validation_loader,25)
+    
+    save_model(model,nn_config,performance_metrics)
+       
+    
+global working_dir
 
-    training(model,train_loader,test_loader,validation_loader,25)
+working_dir = os.path.dirname(os.path.realpath(__file__))
+
+if __name__ == "__main__":
+    os.chdir(working_dir)
+    data = AirbnbNightlyPriceImageDataset()
+    find_best_nn(data)
+
+    
