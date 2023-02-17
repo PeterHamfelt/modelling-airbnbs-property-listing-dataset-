@@ -209,33 +209,42 @@ def save_model(model,nn_config,metrics_dict):
         if 'regressor' in model_name.lower():
             model
     
-def find_best_nn(data):
+def find_best_nn(data,n_model=1):
     
     train_sampler, testing_sampler, validation_sampler = data.data_splitter()
     train_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = train_sampler)
     test_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = testing_sampler)
     validation_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = validation_sampler)
     
-    nn_config = get_nn_config()
-    optimiser_type = nn_config["optimiser"]
-    learning_rate = nn_config["Learning_rate"]
+    for _ in range(n_model):
+        
+        generate_nn_configs()
+        
+        nn_config = get_nn_config()
+        optimiser_type = nn_config["optimiser"]
+        learning_rate = nn_config["Learning_rate"]
 
-    model = LinearRegression(data,nn_config)
-    
-    model,performance_metrics = training(model,train_loader,test_loader,validation_loader,25,optimiser_type,learning_rate)
-    
-    save_model(model,nn_config,performance_metrics)
+        model = LinearRegression(data,nn_config)
+        
+        model,performance_metrics = training(model,train_loader,test_loader,validation_loader,25,optimiser_type,learning_rate)
+        
+        save_model(model,nn_config,performance_metrics)
        
-def generate_nn_configs(n_models=1):
+def generate_nn_configs():
     
-    nn_config_folder = os.path.join(working_dir,"nn_configs")
+    nn_config_path = os.path.join(working_dir,"nn_config.yaml")
     
-    if os.path.exists(nn_config_folder) == True:
-        shutil.rmtree(nn_config_folder)
-        
-    for idx in range(n_models):
-        pass
-        
+    nn_config = {
+        'optimiser':"SGD",
+        'Learning_rate':np.random.uniform(0.0001,0.01),
+        'hidden_layer_width':np.random.randint(12,20),
+        'depth':np.random.randint(1,4)
+    }
+    
+    with open(nn_config_path,"w") as config_file:
+        yaml.dump(nn_config,config_file)
+    
+    
 global working_dir
 
 working_dir = os.path.dirname(os.path.realpath(__file__))
@@ -243,6 +252,6 @@ working_dir = os.path.dirname(os.path.realpath(__file__))
 if __name__ == "__main__":
     os.chdir(working_dir)
     data = AirbnbNightlyPriceImageDataset()
-    find_best_nn(data)
+    find_best_nn(data,4)
 
     
