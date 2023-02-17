@@ -6,6 +6,7 @@ import yaml
 import datetime
 import time
 import json
+import shutil
 from sklearn.preprocessing import normalize
 from tabular_data import load_airbnb
 from torch.utils.tensorboard import SummaryWriter
@@ -77,11 +78,12 @@ class LinearRegression(torch.nn.Module):
         prediction = self.linear(features)
         return prediction
     
-def training(model,train_loader,test_loader,validation_loader,n_epochs=10):
+def training(model,train_loader,test_loader,validation_loader,n_epochs=10,optimiser_type="SGD",learning_rate = 0.001):
     
     writer = SummaryWriter()
     
-    optimizer  = torch.optim.SGD(model.parameters(), lr = 0.001)
+    init_optimiser = getattr(torch.optim,optimiser_type)
+    optimiser = init_optimiser(model.parameters(),lr = learning_rate)
     
     total_loss = 0
     total_r_square = 0
@@ -109,10 +111,10 @@ def training(model,train_loader,test_loader,validation_loader,n_epochs=10):
             # Backpropagate the train_loss into hidden layers
             loss.backward()
             
-            optimizer.step()
+            optimiser.step()
             
             # Reset the gradient before computing the next loss fir every req_grad = True parameters. 
-            optimizer.zero_grad()
+            optimiser.zero_grad()
             
         avg_training_loss = np.mean(total_loss)
         training_RMSE = np.sqrt(avg_training_loss)
@@ -215,14 +217,25 @@ def find_best_nn(data):
     validation_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = validation_sampler)
     
     nn_config = get_nn_config()
+    optimiser_type = nn_config["optimiser"]
+    learning_rate = nn_config["Learning_rate"]
 
     model = LinearRegression(data,nn_config)
     
-    model,performance_metrics = training(model,train_loader,test_loader,validation_loader,25)
+    model,performance_metrics = training(model,train_loader,test_loader,validation_loader,25,optimiser_type,learning_rate)
     
     save_model(model,nn_config,performance_metrics)
        
+def generate_nn_configs(n_models=1):
     
+    nn_config_folder = os.path.join(working_dir,"nn_configs")
+    
+    if os.path.exists(nn_config_folder) == True:
+        shutil.rmtree(nn_config_folder)
+        
+    for idx in range(n_models):
+        pass
+        
 global working_dir
 
 working_dir = os.path.dirname(os.path.realpath(__file__))
