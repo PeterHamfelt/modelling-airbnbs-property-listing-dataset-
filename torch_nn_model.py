@@ -7,6 +7,7 @@ import datetime
 import time
 import json
 import shutil
+import joblib
 from sklearn.preprocessing import normalize
 from tabular_data import load_airbnb
 from torch.utils.tensorboard import SummaryWriter
@@ -182,7 +183,7 @@ def get_nn_config():
         
     return nn_config_dict
 
-def save_model(model,nn_config,metrics_dict):
+def save_model(model,metrics_dict, nn_config=None, hyperparameter_dict = None):
     
     current_time = datetime.datetime.now().replace(microsecond=0).isoformat().replace(":","-")
     
@@ -202,12 +203,27 @@ def save_model(model,nn_config,metrics_dict):
             with open(os.path.join(save_path,"hyperparanmeter.json"),"w+") as f:
                 json.dump(nn_config,f)    
 
-    else:         
+    elif hyperparameter_dict != None:         
         
         model_name = str(type(model())).split(".")[-1]
         
         if 'regressor' in model_name.lower():
-            model
+            upper_save_folder = os.path.join(working_dir,"models/regression",{}.format(type(model).__name__))
+        else: 
+            upper_save_folder = os.path.join(working_dir,"models/classification",{}.format(type(model).__name__))            
+            
+        if os.path.exists(upper_save_folder) == False:
+            os.mkdir(upper_save_folder)
+            
+        joblib.dump(model,os.path.join(upper_save_folder,"model.joblib"))
+        
+        with open(os.path.join(upper_save_folder,"hyperparameters.json"),"w+") as jfile:
+            json.dump(hyperparameter_dict, jfile)
+            
+        with open(os.path.join(upper_save_folder,"metrics.json"),"w+") as jfile:
+            json.dump(metrics_dict, jfile)
+
+            
     
 def find_best_nn(data,n_model=1):
     
@@ -230,7 +246,7 @@ def find_best_nn(data,n_model=1):
         
         model,performance_metrics = training(model,train_loader,test_loader,validation_loader,25,optimiser_type,learning_rate)
         
-        save_model(model,nn_config,performance_metrics)
+        save_model(model,metrics_dict=performance_metrics,nn_config=nn_config)
         
         if performance_metrics["RMSE_loss"]["Validation"] < min_validation_loss:
             best_model = model
