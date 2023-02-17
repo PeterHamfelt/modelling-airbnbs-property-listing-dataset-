@@ -216,6 +216,8 @@ def find_best_nn(data,n_model=1):
     test_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = testing_sampler)
     validation_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = validation_sampler)
     
+    min_validation_loss = np.inf
+    
     for _ in range(n_model):
         
         generate_nn_configs()
@@ -229,7 +231,14 @@ def find_best_nn(data,n_model=1):
         model,performance_metrics = training(model,train_loader,test_loader,validation_loader,25,optimiser_type,learning_rate)
         
         save_model(model,nn_config,performance_metrics)
+        
+        if performance_metrics["RMSE_loss"]["Validation"] < min_validation_loss:
+            best_model = model
+            best_model_performance_metrics = performance_metrics
+            best_model_hyperparameters = nn_config
        
+    return best_model, best_model_performance_metrics, best_model_hyperparameters
+
 def generate_nn_configs():
     
     nn_config_path = os.path.join(working_dir,"nn_config.yaml")
@@ -252,6 +261,7 @@ working_dir = os.path.dirname(os.path.realpath(__file__))
 if __name__ == "__main__":
     os.chdir(working_dir)
     data = AirbnbNightlyPriceImageDataset()
-    find_best_nn(data,4)
+    best_model, best_model_performance_metrics, best_model_hyperparameters =find_best_nn(data,4)
+    print(f"The best model is achieved using the following hyperparameters {best_model_hyperparameters} and its performance metrics are as follow {best_model_performance_metrics}")
 
     
