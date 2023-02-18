@@ -18,7 +18,71 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, RandomForestClassifier, GradientBoostingClassifier
 from torch.utils.tensorboard import SummaryWriter
 
+# SKlearn's Machine learning regression and classification models
+def model_hyperparameter_tuner(model_type,X,y,hyperparameter_dict):
+    
+    x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size=0.3, random_state=42)
+    x_test, x_val, y_test, y_val = model_selection.train_test_split(x_test, y_test, test_size=0.5, random_state=42)
+    
+    model = model_type(random_state = 42)
+    
+    gs = GridSearchCV(model,hyperparameter_dict)
+    gs.fit(x_train,y_train)
+    
+    performance_metrics = {}
+    metric_1_dict = {}
+    metric_2_dict = {}
+    
+    modes = ["Training","Testing","Validation"]
+    x_data = [x_train,x_test,x_val]
+    
+    for mode, data in zip(modes,x_data):
+        y_pred = gs.predict(data)
+        
+        if mode.lower() == "training":
+            target = y_train
+        elif mode.lower() == "testing":
+            target = y_test
+        elif mode.lower() == "validation":
+            target = y_val
+    
+        if "regressor" in model.__class__.__name__.lower():
+            # Calculate RMSE value
+            metric_1 = np.sqrt(mean_squared_error(target,y_pred)) 
+        
+        elif "classifier" in model.__class__.__name__.lower() or model_type.__class__.__name__.lower() == "logisticregression":
+            
+            metric_1 = accuracy_score(target,y_pred)
+            metric_2 = f1_score(target,y_pred,average = "weighted")
+            
 
+def evaluate_all_models(model_list,X,y,hyperparameter_list):
+    """Evaluate different models
+
+    Evaluate the performance of a list of different regression models by tunning their hyperparameters and comparing them
+    to each other and the base linear regression model. At the same time create a folder for each of the models to save the
+    model, its performance metrics and the hyperparameter combination used to achieved that result. 
+
+    Args:
+        model_list (list): A list of the sklearn model to be evaluated. 
+        X (pandas.DataFrame): The feature columns which will be used to predict the labels.
+        y (pandas.Series): The labels the model is predicting.
+        hyperparameter_list (list): A list of hyperparameter dictionary corresponding to each model. 
+        reg_or_class (str): To evaluate regression models, use reg_or_class = "reg" and for classification models, use
+        reg_or_class = "class".
+    """
+    
+    for model_type, hyperparameter_dict in zip(model_list,hyperparameter_list):
+        
+        model, performance_metrics,model_params, model_best_score = model_hyperparameter_tuner()
+        
+        # if 'regression' in model_type.__class__.__name__.lower():
+        #     hyperparameter_tuner = tune_regression_model_hyperparameters
+        # elif 'classifier' in model_type.__class__.__name__.lower() or model_type.__class__.__name__.lower() == "logisticregression":
+        #     hyperparameter_tuner = tune_classification_model_hyperparameters
+            
+
+# PyTorch linear Regression Neural Network
 class AirbnbNightlyPriceImageDataset(torch.utils.data.Dataset):
     
     def __init__(self):
@@ -272,16 +336,19 @@ def generate_nn_configs():
     
     with open(nn_config_path,"w") as config_file:
         yaml.dump(nn_config,config_file)
-    
-    
-global working_dir
-
-working_dir = os.path.dirname(os.path.realpath(__file__))
 
 if __name__ == "__main__":
+    global working_dir
+    working_dir = os.path.dirname(os.path.realpath(__file__))
     os.chdir(working_dir)
+    
+    # SKlearn Regression Machine learning section 
+    
+    # Initialise airbnb property torch datatset and train n number of models to determine which is the best performing model.
+    # It will then return the best performin model, its performance metrics and hyperparameters. 
     data = AirbnbNightlyPriceImageDataset()
-    best_model, best_model_performance_metrics, best_model_hyperparameters =find_best_nn(data,4)
+    n_models = 4
+    best_model, best_model_performance_metrics, best_model_hyperparameters =find_best_nn(data,n_models)
     print(f"The best model is achieved using the following hyperparameters {best_model_hyperparameters} and its performance metrics are as follow {best_model_performance_metrics}")
 
     
