@@ -47,13 +47,25 @@ def model_hyperparameter_tuner(model_type,X,y,hyperparameter_dict):
             target = y_val
     
         if "regressor" in model.__class__.__name__.lower():
+            
             # Calculate RMSE value
+            Criteron_1 = "RMSE"
             metric_1 = np.sqrt(mean_squared_error(target,y_pred)) 
         
-        elif "classifier" in model.__class__.__name__.lower() or model_type.__class__.__name__.lower() == "logisticregression":
+        elif "classifier" in model.__class__.__name__.lower() or model.__class__.__name__.lower() == "logisticregression":
             
+            Criteron_1 = "Accuracy"
             metric_1 = accuracy_score(target,y_pred)
+            
+            Criteron_2 = "F1 Scre"
             metric_2 = f1_score(target,y_pred,average = "weighted")
+            
+        performance_metrics[f"Model {Criteron_1}"][f"{mode} {Criteron_1}"] = metric_1
+        
+        if Criteron_2 != None:
+            performance_metrics[f"Model {Criteron_2}"][f"{mode} {Criteron_2}"] = metric_2
+            
+    return gs.best_estimator_, performance_metrics, gs.best_params_
             
 
 def evaluate_all_models(model_list,X,y,hyperparameter_list):
@@ -74,7 +86,7 @@ def evaluate_all_models(model_list,X,y,hyperparameter_list):
     
     for model_type, hyperparameter_dict in zip(model_list,hyperparameter_list):
         
-        model, performance_metrics,model_params, model_best_score = model_hyperparameter_tuner()
+        model, performance_metrics,model_params = model_hyperparameter_tuner()
         
         # if 'regression' in model_type.__class__.__name__.lower():
         #     hyperparameter_tuner = tune_regression_model_hyperparameters
