@@ -1,4 +1,4 @@
-Learning_rate: 0.0012942951238959482
-depth: 2
-hidden_layer_width: 12
+Learning_rate: 0.0020036612862058406
+depth: 1
+hidden_layer_width: 14
 optimiser: SGD

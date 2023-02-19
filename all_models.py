@@ -30,11 +30,10 @@ def model_hyperparameter_tuner(model_type,X,y,hyperparameter_dict):
     gs.fit(x_train,y_train)
     
     performance_metrics = {}
-    metric_1_dict = {}
-    metric_2_dict = {}
-    
+
     modes = ["Training","Testing","Validation"]
     x_data = [x_train,x_test,x_val]
+    Criteron_2 = None
     
     for mode, data in zip(modes,x_data):
         y_pred = gs.predict(data)
@@ -60,9 +59,11 @@ def model_hyperparameter_tuner(model_type,X,y,hyperparameter_dict):
             Criteron_2 = "F1 Scre"
             metric_2 = f1_score(target,y_pred,average = "weighted")
             
+        performance_metrics[f"Model {Criteron_1}"] = {}
         performance_metrics[f"Model {Criteron_1}"][f"{mode} {Criteron_1}"] = metric_1
         
         if Criteron_2 != None:
+            performance_metrics[f"Model {Criteron_2}"] = {}
             performance_metrics[f"Model {Criteron_2}"][f"{mode} {Criteron_2}"] = metric_2
             
     return gs.best_estimator_, performance_metrics, gs.best_params_
@@ -83,15 +84,13 @@ def evaluate_all_models(model_list,X,y,hyperparameter_list):
         reg_or_class (str): To evaluate regression models, use reg_or_class = "reg" and for classification models, use
         reg_or_class = "class".
     """
+    #  TODO: Add evaluate_all_models and add find_best_model for SKlearn models.
     
     for model_type, hyperparameter_dict in zip(model_list,hyperparameter_list):
         
-        model, performance_metrics,model_params = model_hyperparameter_tuner()
+        model, performance_metrics,model_params = model_hyperparameter_tuner(model_type,X,y,hyperparameter_dict)
         
-        # if 'regression' in model_type.__class__.__name__.lower():
-        #     hyperparameter_tuner = tune_regression_model_hyperparameters
-        # elif 'classifier' in model_type.__class__.__name__.lower() or model_type.__class__.__name__.lower() == "logisticregression":
-        #     hyperparameter_tuner = tune_classification_model_hyperparameters
+        save_model(model,metrics_dict=performance_metrics, model_type= model_type, hyperparameter_dict=model_params) 
             
 
 # PyTorch linear Regression Neural Network
@@ -265,7 +264,7 @@ def get_nn_config():
         
     return nn_config_dict
 
-def save_model(model,metrics_dict, nn_config=None, hyperparameter_dict = None):
+def save_model(model,metrics_dict, nn_config=None, model_type = None, hyperparameter_dict = None):
     
     current_time = datetime.datetime.now().replace(microsecond=0).isoformat().replace(":","-")
     
@@ -285,14 +284,14 @@ def save_model(model,metrics_dict, nn_config=None, hyperparameter_dict = None):
             with open(os.path.join(save_path,"hyperparanmeter.json"),"w+") as f:
                 json.dump(nn_config,f)    
 
-    elif hyperparameter_dict != None:         
+    elif hyperparameter_dict != None:  
         
-        model_name = str(type(model())).split(".")[-1]
+        model_name = type(model_type()).__name__.lower()
         
         if 'regressor' in model_name.lower():
-            upper_save_folder = os.path.join(working_dir,"models/regression",{}.format(type(model).__name__))
+            upper_save_folder = os.path.join(working_dir,"models/regression",model_name)
         else: 
-            upper_save_folder = os.path.join(working_dir,"models/classification",{}.format(type(model).__name__))            
+            upper_save_folder = os.path.join(working_dir,"models/classification",model_name)           
             
         if os.path.exists(upper_save_folder) == False:
             os.mkdir(upper_save_folder)
@@ -355,6 +354,18 @@ if __name__ == "__main__":
     os.chdir(working_dir)
     
     # SKlearn Regression Machine learning section 
+    label_column_name = "Price_Night"
+    df = pd.read_csv(os.path.join(working_dir,"data/tabular_data/clean_tabular_data.csv"))
+    X, y_regression = load_airbnb(df,label_column_name)
+    
+    sgd_hyperarameters = {"penalty": ["l1","l2","elasticnet"],
+                      "alpha": [0.01, 0.001, 0.0001]}
+    
+    regression_model_list = [SGDRegressor]
+    
+    regression_model_hyperparameter_list = [sgd_hyperarameters]
+    
+    evaluate_all_models(regression_model_list,X,y_regression,regression_model_hyperparameter_list)
     
     # Initialise airbnb property torch datatset and train n number of models to determine which is the best performing model.
     # It will then return the best performin model, its performance metrics and hyperparameters. 
