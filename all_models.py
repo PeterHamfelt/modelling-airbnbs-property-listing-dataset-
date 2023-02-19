@@ -431,90 +431,90 @@ if __name__ == "__main__":
     df = pd.read_csv(os.path.join(working_dir,"data/tabular_data/clean_tabular_data.csv"))
     
     # SKlearn regression machine learning section
-    # label_column_name = "Price_Night"
-    # X, y_regression = load_airbnb(df,label_column_name)
+    label_column_name = "Price_Night"
+    X, y_regression = load_airbnb(df,label_column_name)
     
-    # sgd_hyperarameters = {"penalty": ["l1","l2","elasticnet"],
-    #                   "alpha": [0.01, 0.001, 0.0001]}
+    sgd_hyperarameters = {"penalty": ["l1","l2","elasticnet"],
+                      "alpha": [0.01, 0.001, 0.0001]}
     
-    # gbr_regression_hyperparameters = {"learning_rate": [0.1,0.01,0.001], 
-    #                "subsample": [1.0,0.1,0.01], 
-    #                "n_estimators":[10,50,100],
-    #                "max_depth": [4,6,8]}
+    gbr_regression_hyperparameters = {"learning_rate": [0.1,0.01,0.001], 
+                   "subsample": [1.0,0.1,0.01], 
+                   "n_estimators":[10,50,100],
+                   "max_depth": [4,6,8]}
     
-    # dt_regression_hyperparameters = {"splitter": ["best","random"],
-    #                   "max_depth": [4,6,8],
-    #                   }
+    dt_regression_hyperparameters = {"splitter": ["best","random"],
+                      "max_depth": [4,6,8],
+                      }
 
-    # rf_regression_hyperparameters = {"n_estimators":[10,50,100],
-    #                     "max_depth":[4,6,8],
-    #                     }
+    rf_regression_hyperparameters = {"n_estimators":[10,50,100],
+                        "max_depth":[4,6,8],
+                        }
 
-    # regression_model_list = [SGDRegressor,
-    #                         GradientBoostingRegressor, 
-    #                         DecisionTreeRegressor, 
-    #                         RandomForestRegressor
-    #                         ]
-    # regression_model_hyperparameter_list = [sgd_hyperarameters, 
-    #                                 gbr_regression_hyperparameters, 
-    #                                 dt_regression_hyperparameters,
-    #                                 rf_regression_hyperparameters
-    #                                 ]
+    regression_model_list = [SGDRegressor,
+                            GradientBoostingRegressor, 
+                            DecisionTreeRegressor, 
+                            RandomForestRegressor
+                            ]
+    regression_model_hyperparameter_list = [sgd_hyperarameters, 
+                                    gbr_regression_hyperparameters, 
+                                    dt_regression_hyperparameters,
+                                    rf_regression_hyperparameters
+                                    ]
     
-    # best_model, best_model_hyperparameters, best_model_performance_metrics = evaluate_all_models(regression_model_list, X, y_regression, regression_model_hyperparameter_list)
+    best_model, best_model_hyperparameters, best_model_performance_metrics = evaluate_all_models(regression_model_list, X, y_regression, regression_model_hyperparameter_list)
     
-    # print("Finish evaluating regression models")
+    print("Finish evaluating regression models")
     
-    # print('\n')
+    print('\n')
     
-    # print("The best performing model is {best_model} with performance of {best_model_performance_metrics}")
+    print("The best performing model is {best_model} with performance of {best_model_performance_metrics}")
     
-    # # SKlearn classification machine learning section
-    # label_column_name = "Category"
-    # X, y_classification = load_airbnb(df,label_column_name)
+    # SKlearn classification machine learning section
+    label_column_name = "Category"
+    X, y_classification = load_airbnb(df,label_column_name)
     
-    # log_hyperparameters = {"penalty":["l2","none"],
-    #                    "solver":["lbfgs","newton-cg","sag","saga"]}
+    log_hyperparameters = {"penalty":["l2","none"],
+                       "solver":["lbfgs","newton-cg","sag","saga"]}
 
-    # dt_classification_hyperparameters = {"splitter":["best","random"],
-    #                                     "min_samples_split":[2,10,50,100],
-    #                                     "max_depth":[2,4,7,10],
-    #                                     "min_samples_leaf":[2,10,50,100],
-    #                                     "max_features":[None,"auto","sqrt","log2"]
-    #                                     }
+    dt_classification_hyperparameters = {"splitter":["best","random"],
+                                        "min_samples_split":[2,10,50,100],
+                                        "max_depth":[2,4,7,10],
+                                        "min_samples_leaf":[2,10,50,100],
+                                        "max_features":[None,"auto","sqrt","log2"]
+                                        }
 
-    # rf_classification_hyperparameters = {"n_estimators":[10,50,100],
-    #                                     "max_depth":[2,4,7,10],
-    #                                     "min_samples_split":[2,10,50,100],
-    #                                     "min_samples_leaf":[2,10,50,100],
-    #                                     "max_features":[None,"auto","sqrt","log2"]
-    #                                     }
+    rf_classification_hyperparameters = {"n_estimators":[10,50,100],
+                                        "max_depth":[2,4,7,10],
+                                        "min_samples_split":[2,10,50,100],
+                                        "min_samples_leaf":[2,10,50,100],
+                                        "max_features":[None,"auto","sqrt","log2"]
+                                        }
 
-    # gbr_classification_hyperparameters = {"learning_rate": [0.1, 0.01, 0.001],
-    #                                     "n_estimators": [10,50,75,100],
-    #                                     "min_samples_leaf": [2,10,50,100],
-    #                                     "max_depth": [2,4,7,10],
-    #                                     "max_features": [None,"auto","sqrt","log2"]}
+    gbr_classification_hyperparameters = {"learning_rate": [0.1, 0.01, 0.001],
+                                        "n_estimators": [10,50,75,100],
+                                        "min_samples_leaf": [2,10,50,100],
+                                        "max_depth": [2,4,7,10],
+                                        "max_features": [None,"auto","sqrt","log2"]}
 
-    # classification_model_list = [LogisticRegression, 
-    #                             DecisionTreeClassifier, 
-    #                             RandomForestClassifier,
-    #                             GradientBoostingClassifier
-    #                             ]
+    classification_model_list = [LogisticRegression, 
+                                DecisionTreeClassifier, 
+                                RandomForestClassifier,
+                                GradientBoostingClassifier
+                                ]
 
-    # classification_model_hyperparameter_list =[log_hyperparameters, 
-    #                                     dt_classification_hyperparameters, 
-    #                                     rf_classification_hyperparameters,
-    #                                     gbr_classification_hyperparameters
-    #                                     ]
+    classification_model_hyperparameter_list =[log_hyperparameters, 
+                                        dt_classification_hyperparameters, 
+                                        rf_classification_hyperparameters,
+                                        gbr_classification_hyperparameters
+                                        ]
     
-    # best_model, best_model_hyperparameters, best_model_performance_metrics = evaluate_all_models(classification_model_list, X, y_classification, classification_model_hyperparameter_list)
+    best_model, best_model_hyperparameters, best_model_performance_metrics = evaluate_all_models(classification_model_list, X, y_classification, classification_model_hyperparameter_list)
     
-    # print("Finish evaluating classification models")
+    print("Finish evaluating classification models")
     
-    # print('\n')
+    print('\n')
     
-    # print("The best performing model is {best_model} with performance of {best_model_performance_metrics}")
+    print("The best performing model is {best_model} with performance of {best_model_performance_metrics}")
     
     # Initialise airbnb property torch datatset and train n number of models to determine which is the best performing model.
     # It will then return the best performin model, its performance metrics and hyperparameters. 
