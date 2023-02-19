@@ -49,6 +49,10 @@ def model_hyperparameter_tuner(model_type,X,y,hyperparameter_dict):
             
             # Calculate RMSE value
             Criteron_1 = "RMSE"
+            
+            if mode.lower() == "training":
+                performance_metrics[f"Model {Criteron_1}"] = {}
+                
             metric_1 = np.sqrt(mean_squared_error(target,y_pred)) 
         
         elif "classifier" in model.__class__.__name__.lower() or model.__class__.__name__.lower() == "logisticregression":
@@ -59,11 +63,13 @@ def model_hyperparameter_tuner(model_type,X,y,hyperparameter_dict):
             Criteron_2 = "F1 Scre"
             metric_2 = f1_score(target,y_pred,average = "weighted")
             
-        performance_metrics[f"Model {Criteron_1}"] = {}
+            if mode.lower() == "training":
+                performance_metrics[f"Model {Criteron_1}"] = {}
+                performance_metrics[f"Model {Criteron_2}"] = {}
+            
         performance_metrics[f"Model {Criteron_1}"][f"{mode} {Criteron_1}"] = metric_1
         
         if Criteron_2 != None:
-            performance_metrics[f"Model {Criteron_2}"] = {}
             performance_metrics[f"Model {Criteron_2}"][f"{mode} {Criteron_2}"] = metric_2
             
     return gs.best_estimator_, performance_metrics, gs.best_params_
@@ -200,9 +206,7 @@ def training(model,train_loader,test_loader,validation_loader,n_epochs=10,optimi
             
         avg_training_loss = np.mean(total_loss)
         training_RMSE = np.sqrt(avg_training_loss)
-        print(training_RMSE)
         avg_training_r_squared = np.mean(r_squared)
-        print(avg_training_r_squared)
         writer.add_scalar("Average Training Loss",training_RMSE,epochs)
         writer.add_scalar("Aveage R Squared",avg_training_r_squared,epochs)
         
@@ -352,10 +356,10 @@ if __name__ == "__main__":
     global working_dir
     working_dir = os.path.dirname(os.path.realpath(__file__))
     os.chdir(working_dir)
+    df = pd.read_csv(os.path.join(working_dir,"data/tabular_data/clean_tabular_data.csv"))
     
     # SKlearn regression machine learning section
     label_column_name = "Price_Night"
-    df = pd.read_csv(os.path.join(working_dir,"data/tabular_data/clean_tabular_data.csv"))
     X, y_regression = load_airbnb(df,label_column_name)
     
     sgd_hyperarameters = {"penalty": ["l1","l2","elasticnet"],
@@ -387,8 +391,50 @@ if __name__ == "__main__":
     
     evaluate_all_models(regression_model_list,X,y_regression,regression_model_hyperparameter_list)
     
-    # SKlearn classification machine learning section
+    print("Finish evaluating regression models")
     
+    # SKlearn classification machine learning section
+    label_column_name = "Category"
+    X, y_classification = load_airbnb(df,label_column_name)
+    
+    log_hyperparameters = {"penalty":["l2","none"],
+                       "solver":["lbfgs","newton-cg","sag","saga"]}
+
+    dt_classification_hyperparameters = {"splitter":["best","random"],
+                                        "min_samples_split":[2,10,50,100],
+                                        "max_depth":[2,4,7,10],
+                                        "min_samples_leaf":[2,10,50,100],
+                                        "max_features":[None,"auto","sqrt","log2"]
+                                        }
+
+    rf_classification_hyperparameters = {"n_estimators":[10,50,100],
+                                        "max_depth":[2,4,7,10],
+                                        "min_samples_split":[2,10,50,100],
+                                        "min_samples_leaf":[2,10,50,100],
+                                        "max_features":[None,"auto","sqrt","log2"]
+                                        }
+
+    gbr_classification_hyperparameters = {"learning_rate": [0.1, 0.01, 0.001],
+                                        "n_estimators": [10,50,75,100],
+                                        "min_samples_leaf": [2,10,50,100],
+                                        "max_depth": [2,4,7,10],
+                                        "max_features": [None,"auto","sqrt","log2"]}
+
+    classification_model_list = [LogisticRegression, 
+                                DecisionTreeClassifier, 
+                                RandomForestClassifier,
+                                GradientBoostingClassifier
+                                ]
+
+    classification_model_hyperparameter_list =[log_hyperparameters, 
+                                        dt_classification_hyperparameters, 
+                                        rf_classification_hyperparameters,
+                                        gbr_classification_hyperparameters
+                                        ]
+    
+    evaluate_all_models(regression_model_list,X,y_classification,regression_model_hyperparameter_list)
+    
+    print("Finish evaluating classification models")
     
     # Initialise airbnb property torch datatset and train n number of models to determine which is the best performing model.
     # It will then return the best performin model, its performance metrics and hyperparameters. 

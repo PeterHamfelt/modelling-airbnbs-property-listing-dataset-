@@ -1,1 +1,1 @@
-{"Model RMSE": {"Validation RMSE": 101.93715780709228}}
+{"Model RMSE": {"Training RMSE": 86.40545475510285, "Testing RMSE": 113.82304913688931, "Validation RMSE": 101.93715780709228}}
