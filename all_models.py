@@ -188,14 +188,14 @@ def get_nn_config():
         
     return nn_config_dict
 
-def save_model(model,metrics_dict, nn_config=None, model_type = None, hyperparameter_dict = None):
+def save_model(model, metrics_dict, nn_config=None, model_type = None, hyperparameter_dict = None, label_name = None):
     
     current_time = datetime.datetime.now().replace(microsecond=0).isoformat().replace(":","-")
     
     if isinstance(model,torch.nn.Module):
         
         if 'regression' in model.__class__.__name__.lower():
-            save_path = os.path.join(working_dir,"models","regression","neural_networks",f"{model.__class__.__name__} ({current_time})")
+            save_path = os.path.join(working_dir,"models","regression","neural_networks",f"predict_{label_name}",f"{model.__class__.__name__} ({current_time})")
             
             if os.path.exists(save_path) == False:
                 os.makedirs(save_path)
@@ -230,6 +230,8 @@ def save_model(model,metrics_dict, nn_config=None, model_type = None, hyperparam
 
 def find_best_nn(data,n_model=1):
     
+    label_name = data.y.name
+    
     train_sampler, testing_sampler, validation_sampler = data.data_splitter()
     train_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = train_sampler)
     test_loader = torch.utils.data.DataLoader(data,batch_size = 8, sampler = testing_sampler)
@@ -249,7 +251,7 @@ def find_best_nn(data,n_model=1):
         
         model,performance_metrics = training(model,train_loader,test_loader,validation_loader,25,optimiser_type,learning_rate)
         
-        save_model(model,metrics_dict=performance_metrics,nn_config=nn_config)
+        save_model(model,metrics_dict=performance_metrics,nn_config=nn_config,label_name=label_name)
         
         if performance_metrics["RMSE_loss"]["Validation"] < min_validation_loss:
             best_model = model
@@ -514,19 +516,18 @@ if __name__ == "__main__":
     
     # print("The best performing model is {best_model} with performance of {best_model_performance_metrics}")
     
-    # # Initialise airbnb property torch datatset and train n number of models to determine which is the best performing model.
-    # # It will then return the best performin model, its performance metrics and hyperparameters. 
-    # # Predict price per night
-    # data = AirbnbNightlyPriceImageDataset()
-    # n_models = 4
-    # best_model, best_model_performance_metrics, best_model_hyperparameters =find_best_nn(data,n_models)
-    # print(f"The best neural network model is achieved using the following hyperparameters {best_model_hyperparameters} and its performance metrics are as follow {best_model_performance_metrics}")
+    # Initialise airbnb property torch datatset and train n number of models to determine which is the best performing model.
+    # It will then return the best performin model, its performance metrics and hyperparameters. 
+    # Predict price per night
+    data = AirbnbNightlyPriceImageDataset()
+    n_models = 4
+    best_model, best_model_performance_metrics, best_model_hyperparameters =find_best_nn(data,n_models)
+    print(f"The best neural network model is achieved using the following hyperparameters {best_model_hyperparameters} and its performance metrics are as follow {best_model_performance_metrics}")
 
     # Reusing the framework to predict number of bedrooms in the property
     data = AirbnbNightlyPriceImageDataset("bedrooms")
-    print(data.y.name)
-    # n_models = 4
-    # best_model, best_model_performance_metrics, best_model_hyperparameters =find_best_nn(data,n_models)
-    # print(f"The best neural network model is achieved using the following hyperparameters {best_model_hyperparameters} and its performance metrics are as follow {best_model_performance_metrics}")
+    n_models = 4
+    best_model, best_model_performance_metrics, best_model_hyperparameters =find_best_nn(data,n_models)
+    print(f"The best neural network model is achieved using the following hyperparameters {best_model_hyperparameters} and its performance metrics are as follow {best_model_performance_metrics}")
     
     
