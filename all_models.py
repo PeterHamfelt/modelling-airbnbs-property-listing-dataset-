@@ -60,19 +60,86 @@ def model_hyperparameter_tuner(model_type,X,y,hyperparameter_dict):
             Criteron_1 = "Accuracy"
             metric_1 = accuracy_score(target,y_pred)
             
-            Criteron_2 = "F1 Scre"
+            Criteron_2 = "F1 Score"
             metric_2 = f1_score(target,y_pred,average = "weighted")
             
             if mode.lower() == "training":
                 performance_metrics[f"Model {Criteron_1}"] = {}
                 performance_metrics[f"Model {Criteron_2}"] = {}
             
-        performance_metrics[f"Model {Criteron_1}"][f"{mode} {Criteron_1}"] = metric_1
+        performance_metrics[f"Model {Criteron_1}"][mode] = metric_1
         
         if Criteron_2 != None:
-            performance_metrics[f"Model {Criteron_2}"][f"{mode} {Criteron_2}"] = metric_2
+            performance_metrics[f"Model {Criteron_2}"][mode] = metric_2
             
     return gs.best_estimator_, performance_metrics, gs.best_params_
+
+def find_best_ML_model(model_type):
+    """Find the best performing model
+
+    This function finds the best performing model from all the saved models in the model/regression folder by firstly loading
+    in and appending all the model's validation RMSE value into a list. From the list, the position of the lowest RMSE value can 
+    be obtained and used to index the best model's path from the list of model's directory. From the best model's path, the best 
+    model and its associated hyperparameters and performance metrics then can be load in. 
+    
+    Args:
+        reg_or_class (str) = Find which type of model, the best model for classification or regression. reg_or_class = "reg" for 
+        regression model and reg_or_class = "class" for classification model. 
+    
+    Returns:
+        _type_: The best sklearn model
+        dict : The hyperparameters associated with the best model.
+        dict : The performance metrics assocaited with the best model.  
+    """
+    
+    if 'regressor' in type(model_type()).__name__.lower():
+        model_type = "regression"
+    else:
+        model_type = "classification"
+        
+        
+    model_folder = os.path.join(working_dir,f"models/{model_type}")
+    different_models_folder = [folder[0] for folder in os.walk(model_folder) if 'neural_networks' not in folder[0]][1:]
+    
+    if "neural_networks" in different_models_folder:
+        different_models_folder.remove("neural_networks")
+    
+    model_performance_metric_list = []
+    
+    for model_files in different_models_folder:
+        
+        performance_metrics_path = os.path.join(model_files,"metrics.json")
+        
+        with open(performance_metrics_path) as file:
+            performance_metric_dict = json.load(file)
+        
+        # Append all the model's metric validation metric value in a list
+        if model_type.lower() == 'regression':    
+            model_performance_metric_list.append(performance_metric_dict["Model RMSE"]["Validation"])
+        elif model_type.lower() == 'classification':
+            model_performance_metric_list.append(performance_metric_dict["Model F1 Score"]["Validation"])
+    
+    # From the list find the index of the best performing model. The index represent the folder number in the directory hence the best model directory. 
+    if model_type.lower() == 'regression':
+        performance_metric = min(model_performance_metric_list)
+    elif model_type.lower() == 'classification':
+        performance_metric = max(model_performance_metric_list)
+            
+    best_model_folder_index = model_performance_metric_list.index(performance_metric)
+    model_path = os.path.join(different_models_folder[best_model_folder_index],"model.joblib")
+    hyperparameter_path = os.path.join(different_models_folder[best_model_folder_index],"hyperparameters.json")
+    performance_metrics_path = os.path.join(different_models_folder[best_model_folder_index],"metrics.json")
+    
+    with open(model_path, "rb") as file:
+        best_model = joblib.load(file)
+    
+    with open(hyperparameter_path) as file:
+        best_model_hyperparameters = json.load(file)
+        
+    with open(performance_metrics_path) as file:
+        best_model_performance_metrics = json.load(file)
+    
+    return best_model, best_model_hyperparameters, best_model_performance_metrics
             
 
 def evaluate_all_models(model_list,X,y,hyperparameter_list):
@@ -90,14 +157,17 @@ def evaluate_all_models(model_list,X,y,hyperparameter_list):
         reg_or_class (str): To evaluate regression models, use reg_or_class = "reg" and for classification models, use
         reg_or_class = "class".
     """
-    #  TODO: Add evaluate_all_models and add find_best_model for SKlearn models.
+    #  TODO: Find_best_model for SKlearn models.
     
     for model_type, hyperparameter_dict in zip(model_list,hyperparameter_list):
         
         model, performance_metrics,model_params = model_hyperparameter_tuner(model_type,X,y,hyperparameter_dict)
         
-        save_model(model,metrics_dict=performance_metrics, model_type= model_type, hyperparameter_dict=model_params) 
-            
+        save_model(model,metrics_dict=performance_metrics, model_type= model_type, hyperparameter_dict=model_params)
+        
+    best_model, best_model_hyperparameters, best_model_performance_metrics = find_best_ML_model(model_type) 
+    
+    return best_model, best_model_hyperparameters, best_model_performance_metrics
 
 # PyTorch linear Regression Neural Network
 class AirbnbNightlyPriceImageDataset(torch.utils.data.Dataset):
@@ -389,9 +459,13 @@ if __name__ == "__main__":
                                     rf_regression_hyperparameters
                                     ]
     
-    evaluate_all_models(regression_model_list,X,y_regression,regression_model_hyperparameter_list)
+    best_model, best_model_hyperparameters, best_model_performance_metrics = evaluate_all_models(regression_model_list, X, y_regression, regression_model_hyperparameter_list)
     
     print("Finish evaluating regression models")
+    
+    print('\n')
+    
+    print("The best performing model is {best_model} with performance of {best_model_performance_metrics}")
     
     # SKlearn classification machine learning section
     label_column_name = "Category"
@@ -421,20 +495,24 @@ if __name__ == "__main__":
                                         "max_features": [None,"auto","sqrt","log2"]}
 
     classification_model_list = [LogisticRegression, 
-                                DecisionTreeClassifier, 
-                                RandomForestClassifier,
-                                GradientBoostingClassifier
+                                #DecisionTreeClassifier, 
+                                # RandomForestClassifier,
+                                # GradientBoostingClassifier
                                 ]
 
     classification_model_hyperparameter_list =[log_hyperparameters, 
-                                        dt_classification_hyperparameters, 
-                                        rf_classification_hyperparameters,
-                                        gbr_classification_hyperparameters
+                                        #dt_classification_hyperparameters, 
+                                        # rf_classification_hyperparameters,
+                                        # gbr_classification_hyperparameters
                                         ]
     
-    evaluate_all_models(regression_model_list,X,y_classification,regression_model_hyperparameter_list)
+    best_model, best_model_hyperparameters, best_model_performance_metrics = evaluate_all_models(classification_model_list, X, y_classification, classification_model_hyperparameter_list)
     
     print("Finish evaluating classification models")
+    
+    print('\n')
+    
+    print("The best performing model is {best_model} with performance of {best_model_performance_metrics}")
     
     # Initialise airbnb property torch datatset and train n number of models to determine which is the best performing model.
     # It will then return the best performin model, its performance metrics and hyperparameters. 
