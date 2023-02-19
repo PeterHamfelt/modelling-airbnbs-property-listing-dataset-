@@ -495,15 +495,15 @@ if __name__ == "__main__":
                                         "max_features": [None,"auto","sqrt","log2"]}
 
     classification_model_list = [LogisticRegression, 
-                                #DecisionTreeClassifier, 
-                                # RandomForestClassifier,
-                                # GradientBoostingClassifier
+                                DecisionTreeClassifier, 
+                                RandomForestClassifier,
+                                GradientBoostingClassifier
                                 ]
 
     classification_model_hyperparameter_list =[log_hyperparameters, 
-                                        #dt_classification_hyperparameters, 
-                                        # rf_classification_hyperparameters,
-                                        # gbr_classification_hyperparameters
+                                        dt_classification_hyperparameters, 
+                                        rf_classification_hyperparameters,
+                                        gbr_classification_hyperparameters
                                         ]
     
     best_model, best_model_hyperparameters, best_model_performance_metrics = evaluate_all_models(classification_model_list, X, y_classification, classification_model_hyperparameter_list)
@@ -519,6 +519,6 @@ if __name__ == "__main__":
     data = AirbnbNightlyPriceImageDataset()
     n_models = 4
     best_model, best_model_performance_metrics, best_model_hyperparameters =find_best_nn(data,n_models)
-    print(f"The best model is achieved using the following hyperparameters {best_model_hyperparameters} and its performance metrics are as follow {best_model_performance_metrics}")
+    print(f"The best neural network model is achieved using the following hyperparameters {best_model_hyperparameters} and its performance metrics are as follow {best_model_performance_metrics}")
 
     

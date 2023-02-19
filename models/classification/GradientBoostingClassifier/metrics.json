@@ -1,1 +1,1 @@
-{"Model Accuracy": {"Training Accuracy": 0.5679862306368331, "Testing Accuracy": 0.3709677419354839, "Validation Accuracy": 0.384}, "Model F1 Score": {"Training F1 Score": 0.5593440944467499, "Testing F1 Score": 0.3598454771863783, "Validation F1 Score": 0.3582726084373144}}
+{"Model Accuracy": {"Training": 0.5679862306368331, "Testing": 0.3709677419354839, "Validation": 0.384}, "Model F1 Score": {"Training": 0.5593440944467499, "Testing": 0.3598454771863783, "Validation": 0.3582726084373144}}
