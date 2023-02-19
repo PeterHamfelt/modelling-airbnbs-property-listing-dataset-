@@ -353,7 +353,7 @@ if __name__ == "__main__":
     working_dir = os.path.dirname(os.path.realpath(__file__))
     os.chdir(working_dir)
     
-    # SKlearn Regression Machine learning section 
+    # SKlearn regression machine learning section
     label_column_name = "Price_Night"
     df = pd.read_csv(os.path.join(working_dir,"data/tabular_data/clean_tabular_data.csv"))
     X, y_regression = load_airbnb(df,label_column_name)
@@ -361,11 +361,34 @@ if __name__ == "__main__":
     sgd_hyperarameters = {"penalty": ["l1","l2","elasticnet"],
                       "alpha": [0.01, 0.001, 0.0001]}
     
-    regression_model_list = [SGDRegressor]
+    gbr_regression_hyperparameters = {"learning_rate": [0.1,0.01,0.001], 
+                   "subsample": [1.0,0.1,0.01], 
+                   "n_estimators":[10,50,100],
+                   "max_depth": [4,6,8]}
     
-    regression_model_hyperparameter_list = [sgd_hyperarameters]
+    dt_regression_hyperparameters = {"splitter": ["best","random"],
+                      "max_depth": [4,6,8],
+                      }
+
+    rf_regression_hyperparameters = {"n_estimators":[10,50,100],
+                        "max_depth":[4,6,8],
+                        }
+
+    regression_model_list = [SGDRegressor,
+                            GradientBoostingRegressor, 
+                            DecisionTreeRegressor, 
+                            RandomForestRegressor
+                            ]
+    regression_model_hyperparameter_list = [sgd_hyperarameters, 
+                                    gbr_regression_hyperparameters, 
+                                    dt_regression_hyperparameters,
+                                    rf_regression_hyperparameters
+                                    ]
     
     evaluate_all_models(regression_model_list,X,y_regression,regression_model_hyperparameter_list)
+    
+    # SKlearn classification machine learning section
+    
     
     # Initialise airbnb property torch datatset and train n number of models to determine which is the best performing model.
     # It will then return the best performin model, its performance metrics and hyperparameters. 
