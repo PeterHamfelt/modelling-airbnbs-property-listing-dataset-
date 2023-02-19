@@ -18,167 +18,17 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, RandomForestClassifier, GradientBoostingClassifier
 from torch.utils.tensorboard import SummaryWriter
 
-# SKlearn's Machine learning regression and classification models
-def model_hyperparameter_tuner(model_type,X,y,hyperparameter_dict):
-    
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size=0.3, random_state=42)
-    x_test, x_val, y_test, y_val = model_selection.train_test_split(x_test, y_test, test_size=0.5, random_state=42)
-    
-    model = model_type(random_state = 42)
-    
-    gs = GridSearchCV(model,hyperparameter_dict)
-    gs.fit(x_train,y_train)
-    
-    performance_metrics = {}
-
-    modes = ["Training","Testing","Validation"]
-    x_data = [x_train,x_test,x_val]
-    Criteron_2 = None
-    
-    for mode, data in zip(modes,x_data):
-        y_pred = gs.predict(data)
-        
-        if mode.lower() == "training":
-            target = y_train
-        elif mode.lower() == "testing":
-            target = y_test
-        elif mode.lower() == "validation":
-            target = y_val
-    
-        if "regressor" in model.__class__.__name__.lower():
-            
-            # Calculate RMSE value
-            Criteron_1 = "RMSE"
-            
-            if mode.lower() == "training":
-                performance_metrics[f"Model {Criteron_1}"] = {}
-                
-            metric_1 = np.sqrt(mean_squared_error(target,y_pred)) 
-        
-        elif "classifier" in model.__class__.__name__.lower() or model.__class__.__name__.lower() == "logisticregression":
-            
-            Criteron_1 = "Accuracy"
-            metric_1 = accuracy_score(target,y_pred)
-            
-            Criteron_2 = "F1 Score"
-            metric_2 = f1_score(target,y_pred,average = "weighted")
-            
-            if mode.lower() == "training":
-                performance_metrics[f"Model {Criteron_1}"] = {}
-                performance_metrics[f"Model {Criteron_2}"] = {}
-            
-        performance_metrics[f"Model {Criteron_1}"][mode] = metric_1
-        
-        if Criteron_2 != None:
-            performance_metrics[f"Model {Criteron_2}"][mode] = metric_2
-            
-    return gs.best_estimator_, performance_metrics, gs.best_params_
-
-def find_best_ML_model(model_type):
-    """Find the best performing model
-
-    This function finds the best performing model from all the saved models in the model/regression folder by firstly loading
-    in and appending all the model's validation RMSE value into a list. From the list, the position of the lowest RMSE value can 
-    be obtained and used to index the best model's path from the list of model's directory. From the best model's path, the best 
-    model and its associated hyperparameters and performance metrics then can be load in. 
-    
-    Args:
-        reg_or_class (str) = Find which type of model, the best model for classification or regression. reg_or_class = "reg" for 
-        regression model and reg_or_class = "class" for classification model. 
-    
-    Returns:
-        _type_: The best sklearn model
-        dict : The hyperparameters associated with the best model.
-        dict : The performance metrics assocaited with the best model.  
-    """
-    
-    if 'regressor' in type(model_type()).__name__.lower():
-        model_type = "regression"
-    else:
-        model_type = "classification"
-        
-        
-    model_folder = os.path.join(working_dir,f"models/{model_type}")
-    different_models_folder = [folder[0] for folder in os.walk(model_folder) if 'neural_networks' not in folder[0]][1:]
-    
-    if "neural_networks" in different_models_folder:
-        different_models_folder.remove("neural_networks")
-    
-    model_performance_metric_list = []
-    
-    for model_files in different_models_folder:
-        
-        performance_metrics_path = os.path.join(model_files,"metrics.json")
-        
-        with open(performance_metrics_path) as file:
-            performance_metric_dict = json.load(file)
-        
-        # Append all the model's metric validation metric value in a list
-        if model_type.lower() == 'regression':    
-            model_performance_metric_list.append(performance_metric_dict["Model RMSE"]["Validation"])
-        elif model_type.lower() == 'classification':
-            model_performance_metric_list.append(performance_metric_dict["Model F1 Score"]["Validation"])
-    
-    # From the list find the index of the best performing model. The index represent the folder number in the directory hence the best model directory. 
-    if model_type.lower() == 'regression':
-        performance_metric = min(model_performance_metric_list)
-    elif model_type.lower() == 'classification':
-        performance_metric = max(model_performance_metric_list)
-            
-    best_model_folder_index = model_performance_metric_list.index(performance_metric)
-    model_path = os.path.join(different_models_folder[best_model_folder_index],"model.joblib")
-    hyperparameter_path = os.path.join(different_models_folder[best_model_folder_index],"hyperparameters.json")
-    performance_metrics_path = os.path.join(different_models_folder[best_model_folder_index],"metrics.json")
-    
-    with open(model_path, "rb") as file:
-        best_model = joblib.load(file)
-    
-    with open(hyperparameter_path) as file:
-        best_model_hyperparameters = json.load(file)
-        
-    with open(performance_metrics_path) as file:
-        best_model_performance_metrics = json.load(file)
-    
-    return best_model, best_model_hyperparameters, best_model_performance_metrics
-            
-
-def evaluate_all_models(model_list,X,y,hyperparameter_list):
-    """Evaluate different models
-
-    Evaluate the performance of a list of different regression models by tunning their hyperparameters and comparing them
-    to each other and the base linear regression model. At the same time create a folder for each of the models to save the
-    model, its performance metrics and the hyperparameter combination used to achieved that result. 
-
-    Args:
-        model_list (list): A list of the sklearn model to be evaluated. 
-        X (pandas.DataFrame): The feature columns which will be used to predict the labels.
-        y (pandas.Series): The labels the model is predicting.
-        hyperparameter_list (list): A list of hyperparameter dictionary corresponding to each model. 
-        reg_or_class (str): To evaluate regression models, use reg_or_class = "reg" and for classification models, use
-        reg_or_class = "class".
-    """
-    #  TODO: Find_best_model for SKlearn models.
-    
-    for model_type, hyperparameter_dict in zip(model_list,hyperparameter_list):
-        
-        model, performance_metrics,model_params = model_hyperparameter_tuner(model_type,X,y,hyperparameter_dict)
-        
-        save_model(model,metrics_dict=performance_metrics, model_type= model_type, hyperparameter_dict=model_params)
-        
-    best_model, best_model_hyperparameters, best_model_performance_metrics = find_best_ML_model(model_type) 
-    
-    return best_model, best_model_hyperparameters, best_model_performance_metrics
-
 # PyTorch linear Regression Neural Network
 class AirbnbNightlyPriceImageDataset(torch.utils.data.Dataset):
     
-    def __init__(self):
+    def __init__(self,label_column_name="Price_Night"):
         super().__init__()
         clean_data_df = pd.read_csv(os.path.join(working_dir,"data/tabular_data/clean_tabular_data.csv"))
-        load_df = load_airbnb(clean_data_df,"Price_Night")
+        load_df = load_airbnb(clean_data_df,label_column_name)
         self.data = pd.concat([load_df[0],load_df[1]], axis = 1)
         self.x = pd.DataFrame(normalize(load_df[0]))
         self.y = load_df[1]
+        
         
     def __getitem__(self,index):
         feature = torch.tensor(self.x.iloc[index])
@@ -419,6 +269,156 @@ def generate_nn_configs():
         'depth':np.random.randint(1,4)
     }
     
+# SKlearn's Machine learning regression and classification models
+def model_hyperparameter_tuner(model_type,X,y,hyperparameter_dict):
+    
+    x_train, x_test, y_train, y_test = model_selection.train_test_split(X,y, test_size=0.3, random_state=42)
+    x_test, x_val, y_test, y_val = model_selection.train_test_split(x_test, y_test, test_size=0.5, random_state=42)
+    
+    model = model_type(random_state = 42)
+    
+    gs = GridSearchCV(model,hyperparameter_dict)
+    gs.fit(x_train,y_train)
+    
+    performance_metrics = {}
+
+    modes = ["Training","Testing","Validation"]
+    x_data = [x_train,x_test,x_val]
+    Criteron_2 = None
+    
+    for mode, data in zip(modes,x_data):
+        y_pred = gs.predict(data)
+        
+        if mode.lower() == "training":
+            target = y_train
+        elif mode.lower() == "testing":
+            target = y_test
+        elif mode.lower() == "validation":
+            target = y_val
+    
+        if "regressor" in model.__class__.__name__.lower():
+            
+            # Calculate RMSE value
+            Criteron_1 = "RMSE"
+            
+            if mode.lower() == "training":
+                performance_metrics[f"Model {Criteron_1}"] = {}
+                
+            metric_1 = np.sqrt(mean_squared_error(target,y_pred)) 
+        
+        elif "classifier" in model.__class__.__name__.lower() or model.__class__.__name__.lower() == "logisticregression":
+            
+            Criteron_1 = "Accuracy"
+            metric_1 = accuracy_score(target,y_pred)
+            
+            Criteron_2 = "F1 Score"
+            metric_2 = f1_score(target,y_pred,average = "weighted")
+            
+            if mode.lower() == "training":
+                performance_metrics[f"Model {Criteron_1}"] = {}
+                performance_metrics[f"Model {Criteron_2}"] = {}
+            
+        performance_metrics[f"Model {Criteron_1}"][mode] = metric_1
+        
+        if Criteron_2 != None:
+            performance_metrics[f"Model {Criteron_2}"][mode] = metric_2
+            
+    return gs.best_estimator_, performance_metrics, gs.best_params_
+
+def find_best_ML_model(model_type):
+    """Find the best performing model
+
+    This function finds the best performing model from all the saved models in the model/regression folder by firstly loading
+    in and appending all the model's validation RMSE value into a list. From the list, the position of the lowest RMSE value can 
+    be obtained and used to index the best model's path from the list of model's directory. From the best model's path, the best 
+    model and its associated hyperparameters and performance metrics then can be load in. 
+    
+    Args:
+        reg_or_class (str) = Find which type of model, the best model for classification or regression. reg_or_class = "reg" for 
+        regression model and reg_or_class = "class" for classification model. 
+    
+    Returns:
+        _type_: The best sklearn model
+        dict : The hyperparameters associated with the best model.
+        dict : The performance metrics assocaited with the best model.  
+    """
+    
+    if 'regressor' in type(model_type()).__name__.lower():
+        model_type = "regression"
+    else:
+        model_type = "classification"
+        
+        
+    model_folder = os.path.join(working_dir,f"models/{model_type}")
+    different_models_folder = [folder[0] for folder in os.walk(model_folder) if 'neural_networks' not in folder[0]][1:]
+    
+    if "neural_networks" in different_models_folder:
+        different_models_folder.remove("neural_networks")
+    
+    model_performance_metric_list = []
+    
+    for model_files in different_models_folder:
+        
+        performance_metrics_path = os.path.join(model_files,"metrics.json")
+        
+        with open(performance_metrics_path) as file:
+            performance_metric_dict = json.load(file)
+        
+        # Append all the model's metric validation metric value in a list
+        if model_type.lower() == 'regression':    
+            model_performance_metric_list.append(performance_metric_dict["Model RMSE"]["Validation"])
+        elif model_type.lower() == 'classification':
+            model_performance_metric_list.append(performance_metric_dict["Model F1 Score"]["Validation"])
+    
+    # From the list find the index of the best performing model. The index represent the folder number in the directory hence the best model directory. 
+    if model_type.lower() == 'regression':
+        performance_metric = min(model_performance_metric_list)
+    elif model_type.lower() == 'classification':
+        performance_metric = max(model_performance_metric_list)
+            
+    best_model_folder_index = model_performance_metric_list.index(performance_metric)
+    model_path = os.path.join(different_models_folder[best_model_folder_index],"model.joblib")
+    hyperparameter_path = os.path.join(different_models_folder[best_model_folder_index],"hyperparameters.json")
+    performance_metrics_path = os.path.join(different_models_folder[best_model_folder_index],"metrics.json")
+    
+    with open(model_path, "rb") as file:
+        best_model = joblib.load(file)
+    
+    with open(hyperparameter_path) as file:
+        best_model_hyperparameters = json.load(file)
+        
+    with open(performance_metrics_path) as file:
+        best_model_performance_metrics = json.load(file)
+    
+    return best_model, best_model_hyperparameters, best_model_performance_metrics
+            
+
+def evaluate_all_models(model_list,X,y,hyperparameter_list):
+    """Evaluate different models
+
+    Evaluate the performance of a list of different regression models by tunning their hyperparameters and comparing them
+    to each other and the base linear regression model. At the same time create a folder for each of the models to save the
+    model, its performance metrics and the hyperparameter combination used to achieved that result. 
+
+    Args:
+        model_list (list): A list of the sklearn model to be evaluated. 
+        X (pandas.DataFrame): The feature columns which will be used to predict the labels.
+        y (pandas.Series): The labels the model is predicting.
+        hyperparameter_list (list): A list of hyperparameter dictionary corresponding to each model. 
+        reg_or_class (str): To evaluate regression models, use reg_or_class = "reg" and for classification models, use
+        reg_or_class = "class".
+    """
+    
+    for model_type, hyperparameter_dict in zip(model_list,hyperparameter_list):
+        
+        model, performance_metrics,model_params = model_hyperparameter_tuner(model_type,X,y,hyperparameter_dict)
+        
+        save_model(model,metrics_dict=performance_metrics, model_type= model_type, hyperparameter_dict=model_params)
+        
+    best_model, best_model_hyperparameters, best_model_performance_metrics = find_best_ML_model(model_type) 
+    
+    return best_model, best_model_hyperparameters, best_model_performance_metrics
+    
     with open(nn_config_path,"w") as config_file:
         yaml.dump(nn_config,config_file)
 
@@ -429,96 +429,104 @@ if __name__ == "__main__":
     df = pd.read_csv(os.path.join(working_dir,"data/tabular_data/clean_tabular_data.csv"))
     
     # SKlearn regression machine learning section
-    label_column_name = "Price_Night"
-    X, y_regression = load_airbnb(df,label_column_name)
+    # label_column_name = "Price_Night"
+    # X, y_regression = load_airbnb(df,label_column_name)
     
-    sgd_hyperarameters = {"penalty": ["l1","l2","elasticnet"],
-                      "alpha": [0.01, 0.001, 0.0001]}
+    # sgd_hyperarameters = {"penalty": ["l1","l2","elasticnet"],
+    #                   "alpha": [0.01, 0.001, 0.0001]}
     
-    gbr_regression_hyperparameters = {"learning_rate": [0.1,0.01,0.001], 
-                   "subsample": [1.0,0.1,0.01], 
-                   "n_estimators":[10,50,100],
-                   "max_depth": [4,6,8]}
+    # gbr_regression_hyperparameters = {"learning_rate": [0.1,0.01,0.001], 
+    #                "subsample": [1.0,0.1,0.01], 
+    #                "n_estimators":[10,50,100],
+    #                "max_depth": [4,6,8]}
     
-    dt_regression_hyperparameters = {"splitter": ["best","random"],
-                      "max_depth": [4,6,8],
-                      }
+    # dt_regression_hyperparameters = {"splitter": ["best","random"],
+    #                   "max_depth": [4,6,8],
+    #                   }
 
-    rf_regression_hyperparameters = {"n_estimators":[10,50,100],
-                        "max_depth":[4,6,8],
-                        }
+    # rf_regression_hyperparameters = {"n_estimators":[10,50,100],
+    #                     "max_depth":[4,6,8],
+    #                     }
 
-    regression_model_list = [SGDRegressor,
-                            GradientBoostingRegressor, 
-                            DecisionTreeRegressor, 
-                            RandomForestRegressor
-                            ]
-    regression_model_hyperparameter_list = [sgd_hyperarameters, 
-                                    gbr_regression_hyperparameters, 
-                                    dt_regression_hyperparameters,
-                                    rf_regression_hyperparameters
-                                    ]
+    # regression_model_list = [SGDRegressor,
+    #                         GradientBoostingRegressor, 
+    #                         DecisionTreeRegressor, 
+    #                         RandomForestRegressor
+    #                         ]
+    # regression_model_hyperparameter_list = [sgd_hyperarameters, 
+    #                                 gbr_regression_hyperparameters, 
+    #                                 dt_regression_hyperparameters,
+    #                                 rf_regression_hyperparameters
+    #                                 ]
     
-    best_model, best_model_hyperparameters, best_model_performance_metrics = evaluate_all_models(regression_model_list, X, y_regression, regression_model_hyperparameter_list)
+    # best_model, best_model_hyperparameters, best_model_performance_metrics = evaluate_all_models(regression_model_list, X, y_regression, regression_model_hyperparameter_list)
     
-    print("Finish evaluating regression models")
+    # print("Finish evaluating regression models")
     
-    print('\n')
+    # print('\n')
     
-    print("The best performing model is {best_model} with performance of {best_model_performance_metrics}")
+    # print("The best performing model is {best_model} with performance of {best_model_performance_metrics}")
     
-    # SKlearn classification machine learning section
-    label_column_name = "Category"
-    X, y_classification = load_airbnb(df,label_column_name)
+    # # SKlearn classification machine learning section
+    # label_column_name = "Category"
+    # X, y_classification = load_airbnb(df,label_column_name)
     
-    log_hyperparameters = {"penalty":["l2","none"],
-                       "solver":["lbfgs","newton-cg","sag","saga"]}
+    # log_hyperparameters = {"penalty":["l2","none"],
+    #                    "solver":["lbfgs","newton-cg","sag","saga"]}
 
-    dt_classification_hyperparameters = {"splitter":["best","random"],
-                                        "min_samples_split":[2,10,50,100],
-                                        "max_depth":[2,4,7,10],
-                                        "min_samples_leaf":[2,10,50,100],
-                                        "max_features":[None,"auto","sqrt","log2"]
-                                        }
+    # dt_classification_hyperparameters = {"splitter":["best","random"],
+    #                                     "min_samples_split":[2,10,50,100],
+    #                                     "max_depth":[2,4,7,10],
+    #                                     "min_samples_leaf":[2,10,50,100],
+    #                                     "max_features":[None,"auto","sqrt","log2"]
+    #                                     }
 
-    rf_classification_hyperparameters = {"n_estimators":[10,50,100],
-                                        "max_depth":[2,4,7,10],
-                                        "min_samples_split":[2,10,50,100],
-                                        "min_samples_leaf":[2,10,50,100],
-                                        "max_features":[None,"auto","sqrt","log2"]
-                                        }
+    # rf_classification_hyperparameters = {"n_estimators":[10,50,100],
+    #                                     "max_depth":[2,4,7,10],
+    #                                     "min_samples_split":[2,10,50,100],
+    #                                     "min_samples_leaf":[2,10,50,100],
+    #                                     "max_features":[None,"auto","sqrt","log2"]
+    #                                     }
 
-    gbr_classification_hyperparameters = {"learning_rate": [0.1, 0.01, 0.001],
-                                        "n_estimators": [10,50,75,100],
-                                        "min_samples_leaf": [2,10,50,100],
-                                        "max_depth": [2,4,7,10],
-                                        "max_features": [None,"auto","sqrt","log2"]}
+    # gbr_classification_hyperparameters = {"learning_rate": [0.1, 0.01, 0.001],
+    #                                     "n_estimators": [10,50,75,100],
+    #                                     "min_samples_leaf": [2,10,50,100],
+    #                                     "max_depth": [2,4,7,10],
+    #                                     "max_features": [None,"auto","sqrt","log2"]}
 
-    classification_model_list = [LogisticRegression, 
-                                DecisionTreeClassifier, 
-                                RandomForestClassifier,
-                                GradientBoostingClassifier
-                                ]
+    # classification_model_list = [LogisticRegression, 
+    #                             DecisionTreeClassifier, 
+    #                             RandomForestClassifier,
+    #                             GradientBoostingClassifier
+    #                             ]
 
-    classification_model_hyperparameter_list =[log_hyperparameters, 
-                                        dt_classification_hyperparameters, 
-                                        rf_classification_hyperparameters,
-                                        gbr_classification_hyperparameters
-                                        ]
+    # classification_model_hyperparameter_list =[log_hyperparameters, 
+    #                                     dt_classification_hyperparameters, 
+    #                                     rf_classification_hyperparameters,
+    #                                     gbr_classification_hyperparameters
+    #                                     ]
     
-    best_model, best_model_hyperparameters, best_model_performance_metrics = evaluate_all_models(classification_model_list, X, y_classification, classification_model_hyperparameter_list)
+    # best_model, best_model_hyperparameters, best_model_performance_metrics = evaluate_all_models(classification_model_list, X, y_classification, classification_model_hyperparameter_list)
     
-    print("Finish evaluating classification models")
+    # print("Finish evaluating classification models")
     
-    print('\n')
+    # print('\n')
     
-    print("The best performing model is {best_model} with performance of {best_model_performance_metrics}")
+    # print("The best performing model is {best_model} with performance of {best_model_performance_metrics}")
     
-    # Initialise airbnb property torch datatset and train n number of models to determine which is the best performing model.
-    # It will then return the best performin model, its performance metrics and hyperparameters. 
-    data = AirbnbNightlyPriceImageDataset()
-    n_models = 4
-    best_model, best_model_performance_metrics, best_model_hyperparameters =find_best_nn(data,n_models)
-    print(f"The best neural network model is achieved using the following hyperparameters {best_model_hyperparameters} and its performance metrics are as follow {best_model_performance_metrics}")
+    # # Initialise airbnb property torch datatset and train n number of models to determine which is the best performing model.
+    # # It will then return the best performin model, its performance metrics and hyperparameters. 
+    # # Predict price per night
+    # data = AirbnbNightlyPriceImageDataset()
+    # n_models = 4
+    # best_model, best_model_performance_metrics, best_model_hyperparameters =find_best_nn(data,n_models)
+    # print(f"The best neural network model is achieved using the following hyperparameters {best_model_hyperparameters} and its performance metrics are as follow {best_model_performance_metrics}")
 
+    # Reusing the framework to predict number of bedrooms in the property
+    data = AirbnbNightlyPriceImageDataset("bedrooms")
+    print(data.y.name)
+    # n_models = 4
+    # best_model, best_model_performance_metrics, best_model_hyperparameters =find_best_nn(data,n_models)
+    # print(f"The best neural network model is achieved using the following hyperparameters {best_model_hyperparameters} and its performance metrics are as follow {best_model_performance_metrics}")
+    
     

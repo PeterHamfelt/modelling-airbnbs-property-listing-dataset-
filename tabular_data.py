@@ -118,6 +118,9 @@ def load_airbnb(df, label):
         if features[column].dtype != "float64":
             features.drop(column, axis = 1, inplace = True)
     
+    if label == "bedrooms":
+        features["Category"] = df["Category"].astype("category").cat.codes
+        
     return (features,labels)
     
 
