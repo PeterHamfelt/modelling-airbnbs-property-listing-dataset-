@@ -223,8 +223,6 @@ def save_model(model,metrics_dict, nn_config=None, hyperparameter_dict = None):
         with open(os.path.join(upper_save_folder,"metrics.json"),"w+") as jfile:
             json.dump(metrics_dict, jfile)
 
-            
-    
 def find_best_nn(data,n_model=1):
     
     train_sampler, testing_sampler, validation_sampler = data.data_splitter()
